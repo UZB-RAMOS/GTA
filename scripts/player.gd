@@ -2,6 +2,14 @@ extends CharacterBody3D
 
 signal transportga_kirdi(transport)
 signal transportdan_chiqdi
+signal zarar_oldi(miqdor, manba)
+signal hujum_qildi(nishon, miqdor)
+
+const QUROLLAR := {
+	"musht": {"nom": "Musht", "zarar": 18, "masofa": 1.85, "sovush": 0.52},
+	"tayoq": {"nom": "Metall tayoq", "zarar": 38, "masofa": 2.45, "sovush": 0.68},
+	"elektroshoker": {"nom": "Elektroshoker", "zarar": 55, "masofa": 2.05, "sovush": 0.95}
+}
 
 @export var yurish_tezligi := 5.2
 @export var yugurish_tezligi := 8.6
@@ -25,12 +33,18 @@ var harakat_vaqti := 0.0
 var otiribdi := false
 var kamera_erkin_vaqt := 0.0
 var kamera_yaw_offset := 0.0
+var inventar: Array[String] = ["musht"]
+var faol_qurol := "musht"
+var qurol_modellari: Dictionary = {}
+var hujum_sovush_vaqti := 0.0
+var hujum_animatsiyasi := 0.0
+var zarar_immun_vaqti := 0.0
 
 func _ready() -> void:
 	name = "Oyinchi"
 	add_to_group("oyinchi")
 	collision_layer = 2
-	collision_mask = 1 | 4
+	collision_mask = 1 | 4 | 8
 	_yarat_tana()
 	_yarat_kamera()
 
@@ -80,6 +94,7 @@ func _yarat_tana() -> void:
 		_mesh_kapsula(oyoq_pivot, "Boldir", Vector3(0, -0.77, 0), 0.12, 0.55, shim)
 		_mesh_quti(oyoq_pivot, "Poyabzal", Vector3(0, -1.06, -0.08), Vector3(0.29, 0.18, 0.46), poyabzal)
 		oyoq_pivotlari.append(oyoq_pivot)
+	_qurollarni_yarat(qol_pivotlari[1])
 
 	collider = CollisionShape3D.new()
 	kapsula_shakli = CapsuleShape3D.new()
@@ -122,8 +137,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			_transport_qidir()
 		elif is_instance_valid(joriy_transport):
 			joriy_transport.chiqish()
+	if event.is_action_pressed("hujum") and faol:
+		_hujum()
+	if event.is_action_pressed("qurol_1"):
+		qurol_tanla("musht")
+	elif event.is_action_pressed("qurol_2"):
+		qurol_tanla("tayoq")
+	elif event.is_action_pressed("qurol_3"):
+		qurol_tanla("elektroshoker")
 
 func _physics_process(delta: float) -> void:
+	hujum_sovush_vaqti = maxf(0.0, hujum_sovush_vaqti - delta)
+	hujum_animatsiyasi = maxf(0.0, hujum_animatsiyasi - delta)
+	zarar_immun_vaqti = maxf(0.0, zarar_immun_vaqti - delta)
 	if not faol:
 		_transport_kamerasi(delta)
 		return
@@ -175,7 +201,10 @@ func _harakat_animatsiyasi(delta: float, haqiqiy_tezlik: float, maqsad_tezlik: f
 	for i in range(oyoq_pivotlari.size()):
 		var belgi := -1.0 if i == 0 else 1.0
 		oyoq_pivotlari[i].rotation.x = lerp_angle(oyoq_pivotlari[i].rotation.x, qadam * belgi + (0.42 if otiribdi else 0.0), delta * 13.0)
-		qol_pivotlari[i].rotation.x = lerp_angle(qol_pivotlari[i].rotation.x, -qadam * belgi * 0.75 + (-0.25 if otiribdi else 0.0), delta * 13.0)
+		var qol_maqsadi := -qadam * belgi * 0.75 + (-0.25 if otiribdi else 0.0)
+		if i == 1 and hujum_animatsiyasi > 0.0:
+			qol_maqsadi = -1.95 + sin(hujum_animatsiyasi * 22.0) * 0.35
+		qol_pivotlari[i].rotation.x = lerp_angle(qol_pivotlari[i].rotation.x, qol_maqsadi, delta * 16.0)
 	gavda_root.position.y = (abs(sin(harakat_vaqti * 2.0)) * 0.045 * kuch) if yurmoqda else lerpf(gavda_root.position.y, 0.0, delta * 8.0)
 	gavda_root.rotation.z = lerp_angle(gavda_root.rotation.z, sin(harakat_vaqti) * 0.025 * kuch, delta * 10.0)
 
@@ -191,6 +220,88 @@ func _transport_qidir() -> void:
 			eng_yaqin = transport
 	if eng_yaqin:
 		eng_yaqin.kirish(self)
+		return
+	var yaqin_dokon: Node3D
+	eng_masofa = 4.2
+	for dokon in get_tree().get_nodes_in_group("dokon"):
+		var masofa := global_position.distance_to(dokon.global_position)
+		if masofa < eng_masofa and dokon.has_method("ochish"):
+			eng_masofa = masofa
+			yaqin_dokon = dokon
+	if yaqin_dokon:
+		yaqin_dokon.ochish(self)
+
+func _hujum() -> void:
+	if hujum_sovush_vaqti > 0.0 or not QUROLLAR.has(faol_qurol):
+		return
+	var sozlama: Dictionary = QUROLLAR[faol_qurol]
+	hujum_sovush_vaqti = float(sozlama.sovush)
+	hujum_animatsiyasi = 0.30
+	var bosh := global_position + Vector3.UP * 1.32
+	var old := -global_transform.basis.z
+	var sorov := PhysicsRayQueryParameters3D.create(bosh, bosh + old * float(sozlama.masofa))
+	sorov.collision_mask = 4 | 8
+	sorov.exclude = [get_rid()]
+	var natija := get_world_3d().direct_space_state.intersect_ray(sorov)
+	if natija.is_empty():
+		return
+	var nishon = natija.get("collider")
+	if is_instance_valid(nishon) and nishon.has_method("zarar_ol"):
+		var miqdor := int(sozlama.zarar)
+		nishon.zarar_ol(miqdor, self)
+		hujum_qildi.emit(nishon, miqdor)
+
+func zarar_ol(miqdor: int, manba = null) -> void:
+	if miqdor <= 0 or zarar_immun_vaqti > 0.0:
+		return
+	zarar_immun_vaqti = 0.38
+	zarar_oldi.emit(miqdor, manba)
+
+func inventar_qosh(id: String) -> void:
+	if not QUROLLAR.has(id) or inventar.has(id):
+		return
+	inventar.append(id)
+	qurol_tanla(id)
+
+func inventar_qoy(yangi_inventar: Array, tanlangan: String) -> void:
+	inventar.clear()
+	for item in yangi_inventar:
+		var id := String(item)
+		if QUROLLAR.has(id) and not inventar.has(id):
+			inventar.append(id)
+	if not inventar.has("musht"):
+		inventar.push_front("musht")
+	qurol_tanla(tanlangan if inventar.has(tanlangan) else "musht")
+
+func qurol_tanla(id: String) -> void:
+	if not inventar.has(id):
+		return
+	faol_qurol = id
+	for qurol_id in qurol_modellari:
+		qurol_modellari[qurol_id].visible = qurol_id == faol_qurol
+
+func faol_qurol_nomi() -> String:
+	return String(QUROLLAR.get(faol_qurol, QUROLLAR.musht).nom)
+
+func _qurollarni_yarat(ong_qol: Node3D) -> void:
+	var tayoq_root := Node3D.new()
+	tayoq_root.name = "MetallTayoq"
+	tayoq_root.position = Vector3(0, -0.88, -0.25)
+	tayoq_root.rotation.x = deg_to_rad(72.0)
+	ong_qol.add_child(tayoq_root)
+	_mesh_kapsula(tayoq_root, "Tayoq", Vector3(0, -0.28, 0), 0.055, 0.92, _material(Color("707a80"), 0.3))
+	tayoq_root.visible = false
+	qurol_modellari["tayoq"] = tayoq_root
+
+	var shoker_root := Node3D.new()
+	shoker_root.name = "Elektroshoker"
+	shoker_root.position = Vector3(0, -0.91, -0.18)
+	shoker_root.rotation.x = deg_to_rad(74.0)
+	ong_qol.add_child(shoker_root)
+	_mesh_quti(shoker_root, "Korpus", Vector3.ZERO, Vector3(0.16, 0.32, 0.12), _material(Color("20272b"), 0.55))
+	_mesh_quti(shoker_root, "ElektrUchi", Vector3(0, -0.20, 0), Vector3(0.12, 0.12, 0.08), _material(Color("55c7ee"), 0.25))
+	shoker_root.visible = false
+	qurol_modellari["elektroshoker"] = shoker_root
 
 func transportga_otir(transport: CharacterBody3D) -> void:
 	faol = false

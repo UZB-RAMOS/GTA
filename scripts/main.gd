@@ -6,9 +6,14 @@ const TrafficScript = preload("res://scripts/traffic_car.gd")
 const PedestrianScript = preload("res://scripts/pedestrian.gd")
 const TrafficLightScript = preload("res://scripts/traffic_light.gd")
 const MinimapScript = preload("res://scripts/minimap.gd")
+const StoreScript = preload("res://scripts/store.gd")
+const MoneyPickupScript = preload("res://scripts/money_pickup.gd")
 
 const SAVE_PATH := "user://toshkent_sarguzashti_save.json"
-const DUNYO_CHEGARASI := 64.0
+const DUNYO_CHEGARASI := 104.0
+const DUNYO_HAJMI := 210.0
+const CHUNK_HAJMI := 70.0
+const YOL_KOORDINATALARI := [-70.0, -35.0, 0.0, 35.0, 70.0]
 
 var oyinchi: CharacterBody3D
 var topshiriq_transporti: CharacterBody3D
@@ -19,6 +24,7 @@ var topshiriq: Dictionary = {}
 var bosqich := 0
 var pul := 0
 var sogliq := 100
+var zirh := 0
 var hud_yozuvi: Label
 var topshiriq_yozuvi: Label
 var tezlik_yozuvi: Label
@@ -30,13 +36,21 @@ var davom_tugmasi: Button
 var minimap: Control
 var bildirishnoma_vaqti := 0.0
 var preview_kadr := 0
+var inventar_qatlami: ColorRect
+var inventar_matni: Label
+var dokon_qatlami: ColorRect
+var dokon_sarlavhasi: Label
+var dokon_mahsulotlari: VBoxContainer
+var joriy_dokon: Area3D
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("oyin_tizimi")
 	Engine.max_fps = 60
 	_kiritishlarni_sozla()
 	_muhit_yarat()
 	_shahar_yarat()
+	_dokonlar_yarat()
 	_oyinchi_yarat()
 	_transportlar_yarat()
 	_piyodalar_yarat()
@@ -47,6 +61,9 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if OS.get_cmdline_user_args().has("--capture-preview"):
 		_yordamchi_preview_holat()
+	elif OS.get_cmdline_user_args().has("--capture-store"):
+		pul = 75000
+		dokon_och(get_tree().get_first_node_in_group("dokon"))
 	elif OS.get_cmdline_user_args().has("--capture-menu"):
 		_asosiy_menyuni_och()
 	elif OS.get_cmdline_user_args().has("--self-test"):
@@ -72,6 +89,11 @@ func _kiritishlarni_sozla() -> void:
 	_action_key("pauza", KEY_ESCAPE)
 	_action_key("saqlash", KEY_F5)
 	_action_key("yuklash", KEY_F9)
+	_action_key("inventar", KEY_I)
+	_action_key("qurol_1", KEY_1)
+	_action_key("qurol_2", KEY_2)
+	_action_key("qurol_3", KEY_3)
+	_action_mouse("hujum", MOUSE_BUTTON_LEFT)
 
 func _action_key(action: StringName, tugma: Key) -> void:
 	if not InputMap.has_action(action):
@@ -80,6 +102,16 @@ func _action_key(action: StringName, tugma: Key) -> void:
 	event.physical_keycode = tugma
 	for mavjud in InputMap.action_get_events(action):
 		if mavjud is InputEventKey and mavjud.physical_keycode == tugma:
+			return
+	InputMap.action_add_event(action, event)
+
+func _action_mouse(action: StringName, tugma: MouseButton) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	var event := InputEventMouseButton.new()
+	event.button_index = tugma
+	for mavjud in InputMap.action_get_events(action):
+		if mavjud is InputEventMouseButton and mavjud.button_index == tugma:
 			return
 	InputMap.action_add_event(action, event)
 
@@ -106,7 +138,7 @@ func _muhit_yarat() -> void:
 	quyosh.light_color = Color("fff1c6")
 	quyosh.light_energy = 1.0
 	quyosh.shadow_enabled = true
-	quyosh.directional_shadow_max_distance = 95.0
+	quyosh.directional_shadow_max_distance = 155.0
 	add_child(quyosh)
 
 func _shahar_yarat() -> void:
@@ -114,31 +146,33 @@ func _shahar_yarat() -> void:
 	shahar.name = "Shahar"
 	shahar.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(shahar)
+	_chunk_tuzilmasi_yarat(shahar)
 
-	_statik_quti(shahar, "Yer", Vector3(0, -0.3, 0), Vector3(130, 0.6, 130), Color("7b9d63"))
+	_statik_quti(shahar, "Yer", Vector3(0, -0.3, 0), Vector3(DUNYO_HAJMI, 0.6, DUNYO_HAJMI), Color("7b9d63"))
 
 	var asfalt := Color("343b43")
-	for x in [-42.0, 0.0, 42.0]:
-		_vizual_quti(shahar, Vector3(x, 0.025, 0), Vector3(11.5, 0.05, 128), asfalt)
+	for x in YOL_KOORDINATALARI:
+		_vizual_quti(shahar, Vector3(x, 0.025, 0), Vector3(11.5, 0.05, DUNYO_HAJMI - 2.0), asfalt)
 		_yol_chiziqlari(shahar, true, x)
-	for z in [-42.0, 0.0, 42.0]:
-		_vizual_quti(shahar, Vector3(0, 0.035, z), Vector3(128, 0.06, 11.5), asfalt)
+	for z in YOL_KOORDINATALARI:
+		_vizual_quti(shahar, Vector3(0, 0.035, z), Vector3(DUNYO_HAJMI - 2.0, 0.06, 11.5), asfalt)
 		_yol_chiziqlari(shahar, false, z)
 
 	var trotuar := Color("b9b3a5")
-	for x in [-35.5, -6.7, 6.7, 35.5]:
-		_vizual_quti(shahar, Vector3(x, 0.10, 0), Vector3(1.8, 0.2, 128), trotuar)
-	for z in [-35.5, -6.7, 6.7, 35.5]:
-		_vizual_quti(shahar, Vector3(0, 0.105, z), Vector3(128, 0.21, 1.8), trotuar)
+	for yol in YOL_KOORDINATALARI:
+		for taraf in [-6.8, 6.8]:
+			_vizual_quti(shahar, Vector3(yol + taraf, 0.10, 0), Vector3(1.8, 0.2, DUNYO_HAJMI - 2.0), trotuar)
+			_vizual_quti(shahar, Vector3(0, 0.105, yol + taraf), Vector3(DUNYO_HAJMI - 2.0, 0.21, 1.8), trotuar)
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20261021
-	var markazlar := [-27.0, -14.5, 14.5, 27.0]
+	var markazlar := [-87.5, -52.5, -17.5, 17.5, 52.5, 87.5]
 	var ranglar := [Color("e8cf9a"), Color("d99d77"), Color("a9c5d9"), Color("d9d3bd"), Color("b8c99d")]
 	var bino_id := 0
 	for x in markazlar:
 		for z in markazlar:
-			if Vector2(x, z).distance_to(Vector2(-18, -8)) < 10.0:
+			var blok := Vector2(x, z)
+			if blok.distance_to(Vector2(-20, -18)) < 12.0 or blok.distance_to(Vector2(18, -18)) < 12.0 or blok.distance_to(Vector2(38, 35)) < 12.0 or blok.distance_to(Vector2(-52, 53)) < 12.0 or blok.distance_to(Vector2(54, -52)) < 12.0:
 				continue
 			var balandlik := rng.randf_range(5.0, 15.0)
 			var hajm := Vector3(rng.randf_range(7.0, 10.5), balandlik, rng.randf_range(7.0, 10.5))
@@ -158,11 +192,21 @@ func _shahar_yarat() -> void:
 	_korsatkich_yarat(shahar, Vector3(3.8, 3.2, 23), "YANGI MAHALLA", Color("2c8b57"))
 
 func _yol_chiziqlari(parent: Node3D, vertikal: bool, koordinata: float) -> void:
-	for i in range(-12, 13):
+	for i in range(-20, 21):
 		var siljish := float(i) * 5.0
 		var p := Vector3(koordinata, 0.075, siljish) if vertikal else Vector3(siljish, 0.078, koordinata)
 		var size := Vector3(0.13, 0.025, 2.6) if vertikal else Vector3(2.6, 0.025, 0.13)
 		_vizual_quti(parent, p, size, Color("f1d562"))
+
+func _chunk_tuzilmasi_yarat(parent: Node3D) -> void:
+	for x in [-CHUNK_HAJMI, 0.0, CHUNK_HAJMI]:
+		for z in [-CHUNK_HAJMI, 0.0, CHUNK_HAJMI]:
+			var chunk := Node3D.new()
+			chunk.name = "Chunk_%d_%d" % [int(x / CHUNK_HAJMI), int(z / CHUNK_HAJMI)]
+			chunk.position = Vector3(x, 0, z)
+			chunk.set_meta("hajm", Vector2(CHUNK_HAJMI, CHUNK_HAJMI))
+			chunk.add_to_group("dunyo_chunki")
+			parent.add_child(chunk)
 
 func _bino_bezagi(bino: StaticBody3D, hajm: Vector3) -> void:
 	var tom_rangi := Color("924f3d")
@@ -211,7 +255,10 @@ func _daraxtlar_yarat(parent: Node3D) -> void:
 	var joylar := [
 		Vector3(-33, 0, -33), Vector3(-9, 0, -31), Vector3(10, 0, -29), Vector3(33, 0, -31),
 		Vector3(-31, 0, -9), Vector3(30, 0, -9), Vector3(-31, 0, 10), Vector3(31, 0, 11),
-		Vector3(-31, 0, 31), Vector3(-9, 0, 31), Vector3(10, 0, 31), Vector3(29, 0, 29)
+		Vector3(-31, 0, 31), Vector3(-9, 0, 31), Vector3(10, 0, 31), Vector3(29, 0, 29),
+		Vector3(-91, 0, -58), Vector3(-82, 0, 54), Vector3(-56, 0, 88), Vector3(-18, 0, 88),
+		Vector3(18, 0, -88), Vector3(52, 0, 86), Vector3(88, 0, 54), Vector3(88, 0, -19),
+		Vector3(55, 0, -88), Vector3(-88, 0, 18), Vector3(-54, 0, -86), Vector3(86, 0, 87)
 	]
 	for p in joylar:
 		var daraxt := Node3D.new()
@@ -237,8 +284,8 @@ func _daraxtlar_yarat(parent: Node3D) -> void:
 
 func _piyodalar_yolaklari_yarat(parent: Node3D) -> void:
 	var oq := Color("e8e6dc")
-	for x in [-42.0, 0.0, 42.0]:
-		for z in [-42.0, 0.0, 42.0]:
+	for x in YOL_KOORDINATALARI:
+		for z in YOL_KOORDINATALARI:
 			for i in range(-4, 5):
 				_vizual_quti(parent, Vector3(x + i * 0.88, 0.085, z - 7.0), Vector3(0.52, 0.025, 3.0), oq)
 				_vizual_quti(parent, Vector3(x - 7.0, 0.087, z + i * 0.88), Vector3(3.0, 0.025, 0.52), oq)
@@ -253,7 +300,10 @@ func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 		Vector3(-35, 0, -50), Vector3(-35, 0, -24), Vector3(-35, 0, 18), Vector3(-35, 0, 50),
 		Vector3(35, 0, -50), Vector3(35, 0, -24), Vector3(35, 0, 18), Vector3(35, 0, 50),
 		Vector3(-50, 0, -35), Vector3(-22, 0, -35), Vector3(22, 0, -35), Vector3(50, 0, -35),
-		Vector3(-50, 0, 35), Vector3(-22, 0, 35), Vector3(22, 0, 35), Vector3(50, 0, 35)
+		Vector3(-50, 0, 35), Vector3(-22, 0, 35), Vector3(22, 0, 35), Vector3(50, 0, 35),
+		Vector3(-76, 0, -88), Vector3(-41, 0, -88), Vector3(41, 0, -88), Vector3(76, 0, -88),
+		Vector3(-76, 0, 88), Vector3(-41, 0, 88), Vector3(41, 0, 88), Vector3(76, 0, 88),
+		Vector3(-88, 0, -76), Vector3(-88, 0, 76), Vector3(88, 0, -76), Vector3(88, 0, 76)
 	]
 	for p in chiroq_joylari:
 		var ustun := Node3D.new()
@@ -292,8 +342,8 @@ func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 		_vizual_silindr(jihoz, Vector3(1.25, 0.42, 0), 0.27, 0.72, _material(Color("376c58")))
 
 func _svetoforlar_yarat(parent: Node3D) -> void:
-	for x in [-42.0, 0.0, 42.0]:
-		for z in [-42.0, 0.0, 42.0]:
+	for x in YOL_KOORDINATALARI:
+		for z in YOL_KOORDINATALARI:
 			var sozlamalar := [
 				[Vector3(x - 6.7, 0, z - 6.7), 0.0, true],
 				[Vector3(x + 6.7, 0, z + 6.7), PI, true],
@@ -310,10 +360,10 @@ func _svetoforlar_yarat(parent: Node3D) -> void:
 
 func _chegara_yarat(parent: Node3D) -> void:
 	var devorlar := [
-		[Vector3(DUNYO_CHEGARASI, 5.0, 0), Vector3(1.0, 10.0, 130.0)],
-		[Vector3(-DUNYO_CHEGARASI, 5.0, 0), Vector3(1.0, 10.0, 130.0)],
-		[Vector3(0, 5.0, DUNYO_CHEGARASI), Vector3(130.0, 10.0, 1.0)],
-		[Vector3(0, 5.0, -DUNYO_CHEGARASI), Vector3(130.0, 10.0, 1.0)]
+		[Vector3(DUNYO_CHEGARASI, 5.0, 0), Vector3(1.0, 10.0, DUNYO_HAJMI)],
+		[Vector3(-DUNYO_CHEGARASI, 5.0, 0), Vector3(1.0, 10.0, DUNYO_HAJMI)],
+		[Vector3(0, 5.0, DUNYO_CHEGARASI), Vector3(DUNYO_HAJMI, 10.0, 1.0)],
+		[Vector3(0, 5.0, -DUNYO_CHEGARASI), Vector3(DUNYO_HAJMI, 10.0, 1.0)]
 	]
 	for i in range(devorlar.size()):
 		var body := StaticBody3D.new()
@@ -395,11 +445,28 @@ func _material(rang: Color, roughness := 0.82) -> StandardMaterial3D:
 	mat.roughness = roughness
 	return mat
 
+func _dokonlar_yarat() -> void:
+	var sozlamalar := [
+		["Chorsu anjomlari", Vector3(18, 0, -18), Color("267f68"), 0.0],
+		["Yangi mahalla marketi", Vector3(-52, 0, 53), Color("2e6f9b"), PI],
+		["Toshkent savdo uyi", Vector3(54, 0, -52), Color("a36135"), -PI / 2.0]
+	]
+	for i in range(sozlamalar.size()):
+		var dokon := StoreScript.new()
+		dokon.process_mode = Node.PROCESS_MODE_PAUSABLE
+		dokon.name = "Dokon_%02d" % i
+		dokon.dokon_nomi = sozlamalar[i][0]
+		dokon.position = sozlamalar[i][1]
+		dokon.dokon_rangi = sozlamalar[i][2]
+		dokon.rotation.y = sozlamalar[i][3]
+		add_child(dokon)
+
 func _oyinchi_yarat() -> void:
 	oyinchi = PlayerScript.new()
 	oyinchi.process_mode = Node.PROCESS_MODE_PAUSABLE
 	oyinchi.position = Vector3(-7, 0.2, -4)
 	add_child(oyinchi)
+	oyinchi.zarar_oldi.connect(_oyinchi_zarar_oldi)
 
 func _transportlar_yarat() -> void:
 	topshiriq_transporti = VehicleScript.new()
@@ -410,26 +477,31 @@ func _transportlar_yarat() -> void:
 	topshiriq_transporti.rotation.y = PI / 2.0
 	add_child(topshiriq_transporti)
 
-	var yol: Array[Vector3] = [
-		Vector3(-42, 0.2, -42), Vector3(42, 0.2, -42),
-		Vector3(42, 0.2, 42), Vector3(-42, 0.2, 42)
+	var tashqi_yol: Array[Vector3] = [
+		Vector3(-70, 0.2, -70), Vector3(0, 0.2, -70), Vector3(70, 0.2, -70), Vector3(70, 0.2, 0),
+		Vector3(70, 0.2, 70), Vector3(0, 0.2, 70), Vector3(-70, 0.2, 70), Vector3(-70, 0.2, 0)
+	]
+	var ichki_yol: Array[Vector3] = [
+		Vector3(-35, 0.2, -35), Vector3(0, 0.2, -35), Vector3(35, 0.2, -35), Vector3(35, 0.2, 0),
+		Vector3(35, 0.2, 35), Vector3(0, 0.2, 35), Vector3(-35, 0.2, 35), Vector3(-35, 0.2, 0)
 	]
 	var ranglar := [Color("c84b48"), Color("e6b447"), Color("f0eee6"), Color("4a9867"), Color("7e58a8"), Color("db743c"), Color("315e91"), Color("303439"), Color("d7d3c8"), Color("7f2529")]
-	for i in range(10):
+	for i in range(16):
+		var yol: Array[Vector3] = tashqi_yol if i % 2 == 0 else ichki_yol
 		var mashina := TrafficScript.new()
 		mashina.process_mode = Node.PROCESS_MODE_PAUSABLE
 		mashina.name = "Trafik_%02d" % i
 		mashina.rang = ranglar[i % ranglar.size()]
-		mashina.tezlik = 5.8 + i * 0.35
+		mashina.tezlik = 5.8 + (i % 7) * 0.32
 		mashina.yol = yol.duplicate()
 		mashina.indeks = i % yol.size()
-		mashina.position = yol[(i + 1) % yol.size()].lerp(yol[i % yol.size()], 0.25 + 0.1 * (i % 3))
+		mashina.position = yol[i % yol.size()].lerp(yol[(i + 1) % yol.size()], 0.16 + 0.09 * (i % 4))
 		add_child(mashina)
 
 func _piyodalar_yarat() -> void:
 	var ranglar := [Color("d48742"), Color("4b79b8"), Color("8fbe5a"), Color("b45f8f"), Color("d3c151"), Color("3e8974"), Color("a94e47")]
-	var markazlar := [Vector3(-20, 0.1, -18), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29)]
-	for i in range(28):
+	var markazlar := [Vector3(-20, 0.1, -18), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29), Vector3(-84, 0.1, -53), Vector3(-53, 0.1, 53), Vector3(53, 0.1, -53), Vector3(84, 0.1, 52)]
+	for i in range(44):
 		var piyoda := PedestrianScript.new()
 		piyoda.process_mode = Node.PROCESS_MODE_PAUSABLE
 		piyoda.name = "Piyoda_%02d" % i
@@ -438,6 +510,43 @@ func _piyodalar_yarat() -> void:
 		piyoda.radius = 6.0 + float(i % 3)
 		piyoda.position = piyoda.markaz + Vector3(float((i % 4) - 2) * 1.5, 0, float((i % 3) - 1) * 1.4)
 		add_child(piyoda)
+		piyoda.pul_tushdi.connect(_pul_pickup_yarat)
+
+func _pul_pickup_yarat(joy: Vector3, miqdor: int) -> void:
+	var pickup := MoneyPickupScript.new()
+	pickup.process_mode = Node.PROCESS_MODE_PAUSABLE
+	pickup.miqdor = miqdor
+	pickup.position = joy
+	add_child(pickup)
+	pickup.yigildi.connect(_pul_yigildi)
+
+func _pul_yigildi(miqdor: int) -> void:
+	pul += miqdor
+	_xabar("+%s so‘m olindi" % _pul_format(miqdor), 2.5)
+
+func _oyinchi_zarar_oldi(miqdor: int, _manba = null) -> void:
+	var qolgan := miqdor
+	if zirh > 0:
+		var yutilgan := mini(zirh, ceili(miqdor * 0.62))
+		zirh -= yutilgan
+		qolgan -= yutilgan
+	if qolgan > 0:
+		sogliq = maxi(0, sogliq - qolgan)
+	_xabar("-%d jon  •  Jon: %d  Zirh: %d" % [qolgan, sogliq, zirh], 2.2)
+	if sogliq <= 0:
+		_oyinchi_qayta_tiril.call_deferred()
+
+func _oyinchi_qayta_tiril() -> void:
+	if is_instance_valid(oyinchi.joriy_transport):
+		oyinchi.joriy_transport.joriy_tezlik = 0.0
+		oyinchi.joriy_transport.chiqish()
+	sogliq = 100
+	zirh = 0
+	var jarima := mini(pul, maxi(1000, int(pul * 0.10)))
+	pul -= jarima
+	oyinchi.global_position = Vector3(-7, 0.25, -4)
+	oyinchi.velocity = Vector3.ZERO
+	_xabar("Siz shifoxonada uyg‘ondingiz. Jarima: %s so‘m" % _pul_format(jarima), 5.0)
 
 func _topshiriq_yukla() -> void:
 	var matn := FileAccess.get_file_as_string("res://data/mission_01.json")
@@ -482,14 +591,14 @@ func _hud_yarat() -> void:
 
 	var yuqori_panel := ColorRect.new()
 	yuqori_panel.position = Vector2(18, 18)
-	yuqori_panel.size = Vector2(330, 108)
+	yuqori_panel.size = Vector2(390, 148)
 	yuqori_panel.color = Color(0.025, 0.045, 0.065, 0.82)
 	canvas.add_child(yuqori_panel)
 
 	hud_yozuvi = Label.new()
 	hud_yozuvi.position = Vector2(36, 30)
-	hud_yozuvi.size = Vector2(295, 88)
-	hud_yozuvi.add_theme_font_size_override("font_size", 22)
+	hud_yozuvi.size = Vector2(355, 128)
+	hud_yozuvi.add_theme_font_size_override("font_size", 20)
 	hud_yozuvi.add_theme_color_override("font_color", Color("f7f1df"))
 	canvas.add_child(hud_yozuvi)
 
@@ -520,9 +629,9 @@ func _hud_yarat() -> void:
 	canvas.add_child(topshiriq_yozuvi)
 
 	yordam_yozuvi = Label.new()
-	yordam_yozuvi.position = Vector2(20, 140)
-	yordam_yozuvi.size = Vector2(570, 70)
-	yordam_yozuvi.text = "WASD — yurish/haydash  |  Shift — yugurish  |  C/Ctrl — o‘tirish\nE — transportga kirish/chiqish  |  Space — sakrash/tormoz  |  F5/F9 — saqlash/yuklash  |  Esc — pauza"
+	yordam_yozuvi.position = Vector2(20, 176)
+	yordam_yozuvi.size = Vector2(870, 70)
+	yordam_yozuvi.text = "WASD — harakat  |  Sichqon chap — urish  |  1/2/3 — qurol  |  I — inventar\nE — transport/do‘kon  |  C/Ctrl — o‘tirish  |  Space — sakrash/tormoz  |  F5/F9 — saqlash/yuklash"
 	yordam_yozuvi.add_theme_font_size_override("font_size", 16)
 	yordam_yozuvi.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
 	canvas.add_child(yordam_yozuvi)
@@ -541,10 +650,163 @@ func _hud_yarat() -> void:
 	minimap.position = Vector2(-202, 18)
 	minimap.size = Vector2(180, 180)
 	minimap.oyinchi = oyinchi
+	minimap.dunyo_radiusi = DUNYO_CHEGARASI
 	canvas.add_child(minimap)
 
+	_inventar_oynasi_yarat(canvas)
+	_dokon_oynasi_yarat(canvas)
 	_pauza_menyusi_yarat(canvas)
 	_asosiy_menyu_yarat(canvas)
+
+func _inventar_oynasi_yarat(canvas: CanvasLayer) -> void:
+	inventar_qatlami = ColorRect.new()
+	inventar_qatlami.name = "InventarOynasi"
+	inventar_qatlami.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	inventar_qatlami.color = Color(0.01, 0.02, 0.03, 0.86)
+	inventar_qatlami.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	inventar_qatlami.visible = false
+	canvas.add_child(inventar_qatlami)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	inventar_qatlami.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(520, 410)
+	center.add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	panel.add_child(vbox)
+	var sarlavha := Label.new()
+	sarlavha.text = "INVENTAR"
+	sarlavha.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sarlavha.add_theme_font_size_override("font_size", 34)
+	vbox.add_child(sarlavha)
+	inventar_matni = Label.new()
+	inventar_matni.custom_minimum_size = Vector2(470, 240)
+	inventar_matni.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inventar_matni.add_theme_font_size_override("font_size", 22)
+	vbox.add_child(inventar_matni)
+	var yopish := Button.new()
+	yopish.text = "Yopish (I yoki Esc)"
+	yopish.custom_minimum_size.y = 52
+	yopish.pressed.connect(_inventar_yop)
+	vbox.add_child(yopish)
+
+func _dokon_oynasi_yarat(canvas: CanvasLayer) -> void:
+	dokon_qatlami = ColorRect.new()
+	dokon_qatlami.name = "DokonOynasi"
+	dokon_qatlami.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dokon_qatlami.color = Color(0.01, 0.025, 0.035, 0.90)
+	dokon_qatlami.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	dokon_qatlami.visible = false
+	canvas.add_child(dokon_qatlami)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dokon_qatlami.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(650, 540)
+	center.add_child(panel)
+	dokon_mahsulotlari = VBoxContainer.new()
+	dokon_mahsulotlari.add_theme_constant_override("separation", 12)
+	panel.add_child(dokon_mahsulotlari)
+
+func dokon_och(dokon: Area3D) -> void:
+	if asosiy_menyu.visible or not is_instance_valid(dokon):
+		return
+	joriy_dokon = dokon
+	_dokon_tarkibini_yangila()
+	dokon_qatlami.visible = true
+	get_tree().paused = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _dokon_tarkibini_yangila() -> void:
+	for child in dokon_mahsulotlari.get_children():
+		child.queue_free()
+	dokon_sarlavhasi = Label.new()
+	dokon_sarlavhasi.text = "%s\nPul: %s so‘m" % [joriy_dokon.dokon_nomi.to_upper(), _pul_format(pul)]
+	dokon_sarlavhasi.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dokon_sarlavhasi.add_theme_font_size_override("font_size", 30)
+	dokon_sarlavhasi.add_theme_color_override("font_color", Color("f6d66c"))
+	dokon_mahsulotlari.add_child(dokon_sarlavhasi)
+	for mahsulot in joriy_dokon.mahsulotlar:
+		var tugma := Button.new()
+		var id := String(mahsulot.id)
+		var sotib_olingan: bool = id in ["tayoq", "elektroshoker"] and oyinchi.inventar.has(id)
+		tugma.text = "%s — %s so‘m  •  %s" % [mahsulot.nom, _pul_format(int(mahsulot.narx)), mahsulot.izoh]
+		if sotib_olingan:
+			tugma.text += "  [SOTIB OLINGAN]"
+			tugma.disabled = true
+		tugma.custom_minimum_size.y = 60
+		tugma.pressed.connect(_mahsulot_sotib_ol.bind(id))
+		dokon_mahsulotlari.add_child(tugma)
+	var yopish := Button.new()
+	yopish.text = "Do‘konni yopish"
+	yopish.custom_minimum_size.y = 54
+	yopish.pressed.connect(_dokon_yop)
+	dokon_mahsulotlari.add_child(yopish)
+
+func _mahsulot_sotib_ol(id: String) -> void:
+	if not is_instance_valid(joriy_dokon):
+		return
+	var topildi: Dictionary = {}
+	for mahsulot in joriy_dokon.mahsulotlar:
+		if String(mahsulot.id) == id:
+			topildi = mahsulot
+			break
+	if topildi.is_empty():
+		return
+	var narx := int(topildi.narx)
+	if id in ["tayoq", "elektroshoker"] and oyinchi.inventar.has(id):
+		_xabar("Bu qurol inventarda bor", 2.5)
+		return
+	if id == "dori" and sogliq >= 100:
+		_xabar("Jon allaqachon to‘liq", 2.5)
+		return
+	if id == "zirh" and zirh >= 100:
+		_xabar("Zirh allaqachon to‘liq", 2.5)
+		return
+	if pul < narx:
+		_xabar("Pul yetarli emas", 2.5)
+		return
+	pul -= narx
+	match id:
+		"dori":
+			sogliq = mini(100, sogliq + 40)
+		"zirh":
+			zirh = mini(100, zirh + 60)
+		"tayoq", "elektroshoker":
+			oyinchi.inventar_qosh(id)
+	_xabar("%s sotib olindi" % topildi.nom, 3.0)
+	_dokon_tarkibini_yangila()
+
+func _dokon_yop() -> void:
+	dokon_qatlami.visible = false
+	joriy_dokon = null
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _inventar_almashtir() -> void:
+	if inventar_qatlami.visible:
+		_inventar_yop()
+		return
+	if get_tree().paused or asosiy_menyu.visible:
+		return
+	_inventar_matn_yangila()
+	inventar_qatlami.visible = true
+	get_tree().paused = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _inventar_matn_yangila() -> void:
+	var satrlar: Array[String] = []
+	for id in oyinchi.inventar:
+		var sozlama: Dictionary = PlayerScript.QUROLLAR.get(id, {})
+		if not sozlama.is_empty():
+			satrlar.append("• %s%s" % [sozlama.nom, "  [TANLANGAN]" if id == oyinchi.faol_qurol else ""])
+	inventar_matni.text = "Jon: %d/100\nZirh: %d/100\nPul: %s so‘m\n\nQurollar:\n%s\n\n1 — Musht   2 — Metall tayoq   3 — Elektroshoker" % [sogliq, zirh, _pul_format(pul), "\n".join(satrlar)]
+
+func _inventar_yop() -> void:
+	inventar_qatlami.visible = false
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _asosiy_menyu_yarat(canvas: CanvasLayer) -> void:
 	asosiy_menyu = ColorRect.new()
@@ -636,13 +898,16 @@ func _asosiy_menyuni_och() -> void:
 func _yangi_oyin() -> void:
 	pul = 0
 	sogliq = 100
+	zirh = 0
 	if is_instance_valid(oyinchi.joriy_transport):
 		oyinchi.joriy_transport.chiqish()
 	oyinchi.global_position = Vector3(-7, 0.2, -4)
 	oyinchi.rotation = Vector3.ZERO
+	oyinchi.inventar_qoy(["musht"], "musht")
 	topshiriq_transporti.global_position = Vector3(-12, 0.2, 2)
 	topshiriq_transporti.rotation.y = PI / 2.0
 	topshiriq_transporti.joriy_tezlik = 0.0
+	topshiriq_transporti.tiklash()
 	_topshiriq_bosqichini_qoy(0, false)
 	asosiy_menyu.visible = false
 	get_tree().paused = false
@@ -729,13 +994,25 @@ func _process(delta: float) -> void:
 		if bildirishnoma_vaqti <= 0.0:
 			bildirishnoma.text = ""
 	var argumentlar := OS.get_cmdline_user_args()
-	if argumentlar.has("--capture-preview") or argumentlar.has("--capture-menu"):
+	if argumentlar.has("--capture-preview") or argumentlar.has("--capture-menu") or argumentlar.has("--capture-store"):
 		preview_kadr += 1
 		if preview_kadr == 24:
 			_preview_saqlash.call_deferred()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pauza"):
+	if event.is_action_pressed("inventar"):
+		if not dokon_qatlami.visible and not asosiy_menyu.visible:
+			_inventar_almashtir()
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("pauza"):
+		if dokon_qatlami.visible:
+			_dokon_yop()
+			get_viewport().set_input_as_handled()
+			return
+		if inventar_qatlami.visible:
+			_inventar_yop()
+			get_viewport().set_input_as_handled()
+			return
 		if asosiy_menyu.visible:
 			return
 		_pauzani_almashtir()
@@ -780,10 +1057,12 @@ func _hud_yangila() -> void:
 		return
 	var holat := "PIYODA"
 	var speed := 0
+	var transport_holati := ""
 	if is_instance_valid(oyinchi.joriy_transport):
 		holat = "TRANSPORTDA"
 		speed = oyinchi.joriy_transport.tezlik_kmh()
-	hud_yozuvi.text = "TOSHKENT SARGUZASHTI\nSog‘liq: %d     Pul: %s so‘m\nHolat: %s" % [sogliq, _pul_format(pul), holat]
+		transport_holati = "  •  Mashina: %d/%d" % [oyinchi.joriy_transport.mustahkamlik, oyinchi.joriy_transport.maksimal_mustahkamlik]
+	hud_yozuvi.text = "TOSHKENT SARGUZASHTI\nJon: %d/100  •  Zirh: %d/100\nPul: %s so‘m\nQurol: %s  •  %s%s" % [sogliq, zirh, _pul_format(pul), oyinchi.faol_qurol_nomi(), holat, transport_holati]
 	tezlik_yozuvi.text = "%03d km/soat" % speed if holat == "TRANSPORTDA" else ""
 	if topshiriq and not topshiriq.stages.is_empty():
 		var stage: Dictionary = topshiriq.stages[bosqich]
@@ -823,15 +1102,19 @@ func _oyindan_chiqish() -> void:
 
 func _saqlash() -> void:
 	var data := {
-		"schema_version": 1,
+		"schema_version": 2,
 		"timestamp": Time.get_datetime_string_from_system(),
 		"player": oyinchi.holat_ol(),
 		"mission_stage": bosqich,
 		"money": pul,
 		"health": sogliq,
+		"armor": zirh,
+		"inventory": oyinchi.inventar,
+		"selected_weapon": oyinchi.faol_qurol,
 		"vehicle": {
 			"position": [topshiriq_transporti.global_position.x, topshiriq_transporti.global_position.y, topshiriq_transporti.global_position.z],
-			"rotation_y": topshiriq_transporti.rotation.y
+			"rotation_y": topshiriq_transporti.rotation.y,
+			"durability": topshiriq_transporti.mustahkamlik
 		}
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -851,7 +1134,8 @@ func _yuklash() -> void:
 		_xabar("Save fayli buzilgan", 3.0)
 		return
 	var data: Dictionary = parsed
-	if int(data.get("schema_version", 0)) != 1:
+	var schema := int(data.get("schema_version", 0))
+	if schema not in [1, 2]:
 		_xabar("Save versiyasi mos emas", 3.0)
 		return
 	if is_instance_valid(oyinchi.joriy_transport):
@@ -859,11 +1143,17 @@ func _yuklash() -> void:
 	oyinchi.holat_qoy(data.get("player", {}))
 	pul = int(data.get("money", 0))
 	sogliq = int(data.get("health", 100))
+	zirh = int(data.get("armor", 0))
+	oyinchi.inventar_qoy(data.get("inventory", ["musht"]), String(data.get("selected_weapon", "musht")))
 	var transport_data: Dictionary = data.get("vehicle", {})
+	topshiriq_transporti.tiklash()
 	if transport_data.has("position"):
 		var p: Array = transport_data.position
 		topshiriq_transporti.global_position = Vector3(float(p[0]), float(p[1]), float(p[2]))
 		topshiriq_transporti.rotation.y = float(transport_data.get("rotation_y", 0.0))
+	var saqlangan_mustahkamlik := clampi(int(transport_data.get("durability", topshiriq_transporti.maksimal_mustahkamlik)), 0, topshiriq_transporti.maksimal_mustahkamlik)
+	if saqlangan_mustahkamlik < topshiriq_transporti.maksimal_mustahkamlik:
+		topshiriq_transporti.zarar_ol(topshiriq_transporti.maksimal_mustahkamlik - saqlangan_mustahkamlik)
 	_topshiriq_bosqichini_qoy(int(data.get("mission_stage", 0)), false)
 	_xabar("Saqlangan o‘yin yuklandi", 3.0)
 	if get_tree().paused and not asosiy_menyu.visible:
@@ -874,12 +1164,12 @@ func _yordamchi_preview_holat() -> void:
 	oyinchi.global_position = Vector3(0, 0.2, 18)
 	oyinchi.rotation.y = PI
 	oyinchi.kamera_pivot.rotation.x = deg_to_rad(-12.0)
-	yordam_yozuvi.text = "WASD — harakat  |  C — o‘tirish  |  E — transport  |  Esc — pauza"
+	yordam_yozuvi.text = "WASD — harakat  |  Sichqon chap — urish  |  I — inventar  |  E — transport/do‘kon"
 
 func _preview_saqlash() -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
-	var fayl_nomi := "preview_menu.png" if OS.get_cmdline_user_args().has("--capture-menu") else "preview.png"
+	var fayl_nomi := "preview_store.png" if OS.get_cmdline_user_args().has("--capture-store") else ("preview_menu.png" if OS.get_cmdline_user_args().has("--capture-menu") else "preview.png")
 	var yol := ProjectSettings.globalize_path("res://screenshots/" + fayl_nomi)
 	var xato := image.save_png(yol)
 	if xato != OK:
@@ -893,18 +1183,22 @@ func _self_test() -> void:
 	var shahar := get_node_or_null("Shahar")
 	if not is_instance_valid(shahar) or shahar.get_child_count() < 40:
 		xatolar.append("Procedural shahar to‘liq yaratilmagan")
+	if get_tree().get_nodes_in_group("dunyo_chunki").size() != 9:
+		xatolar.append("70x70 o‘lchamli 9 ta dunyo chunki yaratilmagan")
 	if not is_instance_valid(oyinchi) or not is_instance_valid(oyinchi.kamera) or not oyinchi.kamera.current:
 		xatolar.append("Personaj yoki uchinchi shaxs kamerasi yaratilmagan")
 	elif oyinchi.oyoq_pivotlari.size() != 2 or oyinchi.qol_pivotlari.size() != 2:
 		xatolar.append("Personajning bo‘g‘inli 3D modeli yaratilmagan")
 	if get_tree().get_nodes_in_group("transport").size() != 1:
 		xatolar.append("Boshqariladigan transport soni noto‘g‘ri")
-	if get_tree().get_nodes_in_group("trafik").size() != 10:
+	if get_tree().get_nodes_in_group("trafik").size() != 16:
 		xatolar.append("Trafik soni noto‘g‘ri")
-	if get_tree().get_nodes_in_group("piyoda").size() != 28:
+	if get_tree().get_nodes_in_group("piyoda").size() != 44:
 		xatolar.append("Piyodalar soni noto‘g‘ri")
-	if get_tree().get_nodes_in_group("svetofor").size() != 36:
+	if get_tree().get_nodes_in_group("svetofor").size() != 100:
 		xatolar.append("Svetoforlar to‘liq yaratilmagan")
+	if get_tree().get_nodes_in_group("dokon").size() != 3:
+		xatolar.append("Interaktiv do‘konlar yaratilmagan")
 	if get_tree().get_nodes_in_group("dunyo_chegarasi").size() != 4:
 		xatolar.append("Ko‘rinmas xarita chegaralari yaratilmagan")
 	if topshiriq.get("stages", []).size() != 4:
@@ -915,6 +1209,8 @@ func _self_test() -> void:
 		xatolar.append("Asosiy yoki pause menyusi yaratilmagan")
 	elif pauza_qatlami.find_children("*", "HSlider", true, false).size() != 1:
 		xatolar.append("Ovoz sozlamasi topilmadi")
+	if not is_instance_valid(inventar_qatlami) or not is_instance_valid(dokon_qatlami):
+		xatolar.append("Inventar yoki do‘kon oynasi yaratilmagan")
 
 	_asosiy_menyuni_och()
 	if not get_tree().paused or not asosiy_menyu.visible:
@@ -928,6 +1224,35 @@ func _self_test() -> void:
 	_pauzani_yop()
 	if get_tree().paused or pauza_qatlami.visible:
 		xatolar.append("Pause menyusi yopilmadi")
+
+	zirh = 20
+	sogliq = 100
+	oyinchi.zarar_ol(20, null)
+	if sogliq != 93 or zirh != 7:
+		xatolar.append("Jon va zirh zarar tizimi noto‘g‘ri")
+	sogliq = 100
+	zirh = 0
+	pul = 50000
+	joriy_dokon = get_tree().get_first_node_in_group("dokon")
+	_mahsulot_sotib_ol("tayoq")
+	await get_tree().process_frame
+	if not oyinchi.inventar.has("tayoq") or pul != 38000:
+		xatolar.append("Do‘kon xaridi yoki inventar ishlamadi")
+	oyinchi.inventar_qoy(["musht"], "musht")
+	pul = 0
+	topshiriq_transporti.zarar_ol(10)
+	if topshiriq_transporti.mustahkamlik != 150:
+		xatolar.append("Transport mustahkamligi zarar qabul qilmadi")
+	topshiriq_transporti.tiklash()
+	var sinov_piyoda = get_tree().get_first_node_in_group("piyoda")
+	if is_instance_valid(sinov_piyoda):
+		sinov_piyoda.zarar_ol(999, oyinchi)
+		if get_tree().get_nodes_in_group("pul_pickup").is_empty():
+			xatolar.append("Piyoda halok bo‘lganda pul tushmadi")
+		sinov_piyoda.queue_free()
+	for pickup in get_tree().get_nodes_in_group("pul_pickup"):
+		pickup.queue_free()
+	await get_tree().process_frame
 
 	oyinchi.global_position = belgi.global_position
 	_topshiriqni_tekshir()
@@ -961,7 +1286,8 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: shahar=OK anatomik_model=OK kamera=avto_old transport=1 trafik=10 piyoda=28 svetofor=36 chegara=4 mission=4 hud=OK menyu=OK pauza=OK save_load=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=OK pul_drop=OK inventar=OK qurol=OK kamera=avto_old mission=4 save_v2=OK")
+		await get_tree().process_frame
 		get_tree().quit(0)
 	else:
 		for xato in xatolar:

@@ -251,24 +251,26 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 | Natija | Holat | Manba |
 |---|---|---|
 | Godot loyihasi | Tayyor, repository root papkasida | `[kuzatildi]` mahalliy fayllar |
-| Procedural shahar | Yo‘llar, chiziqlar, trotuar, fasadlar, bozor, bekatlar, ko‘cha jihozlari va daraxtlar | `[strings]` `scripts/main.gd` |
+| Procedural shahar | 210 × 210 maydon, 9 ta 70 × 70 mantiqiy chunk, 5 × 5 chorraha tarmog‘i, fasadlar, bozor, bekatlar va ko‘cha jihozlari | `[strings]` `scripts/main.gd`; `[kuzatildi]` real OpenGL preview |
 | Personaj | Yurish, sprint, sakrash, o‘tirish, bo‘g‘inli original 3D tana va procedural animatsiya | `[strings]` `scripts/player.gd` |
 | Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi va avtomatik old kamera | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd` |
-| Trafik va piyodalar | 10 ta batafsil trafik avtomobili, 28 ta bo‘g‘inli piyoda NPC | `[kuzatildi]` `SELF_TEST_OK` |
-| Svetofor va chegara | 36 ta davriy svetofor, trafikning qizilda to‘xtashi va 4 ta ko‘rinmas fizik devor | `[strings]` `scripts/traffic_light.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
+| Trafik va piyodalar | 16 ta batafsil trafik avtomobili, 44 ta bo‘g‘inli piyoda NPC | `[kuzatildi]` `SELF_TEST_OK` |
+| Svetofor va chegara | 100 ta davriy svetofor, trafikning qizilda to‘xtashi va 4 ta ko‘rinmas fizik devor | `[strings]` `scripts/traffic_light.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
+| Zarar tizimi | Transport tezligiga bog‘liq to‘qnashuv zarari, o‘yinchi joni, zirh, avtomobil mustahkamligi va qayta tirilish | `[strings]` `scripts/player.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
+| Pul, do‘kon va inventar | NPC joni tugaganda pul pickup’i; 3 ta do‘kon; dori, zirh, metall tayoq va elektroshoker; musht va qurol tanlash | `[strings]` `scripts/money_pickup.gd`, `scripts/store.gd`, `scripts/player.gd`; `[kuzatildi]` self-test va OpenGL do‘kon preview’i |
 | Topshiriq | JSON’dan yuklanadigan 4 bosqich, 25 000 so‘m mukofot | `[strings]` `data/mission_01.json`; `[kuzatildi]` self-test |
 | UI | Asosiy menyu, HUD, minimap, pause va ovoz sozlamasi | `[kuzatildi]` real OpenGL preview |
-| Save/load | `schema_version: 1`, F5/F9 va menyu tugmalari | `[kuzatildi]` self-test |
+| Save/load | `schema_version: 2`; joylashuv, jon, zirh, pul, inventar, tanlangan qurol va transport mustahkamligi | `[kuzatildi]` self-test |
 | Windows build | `builds/Toshkent_Sarguzashti.exe` | `[kuzatildi]` Godot export va build self-test |
 | Mobil build | Yo‘q | `[kuzatildi]` foydalanuvchi talabi |
 
 Self-test muvaffaqiyat mezoni:
 
 ```text
-SELF_TEST_OK: shahar=OK anatomik_model=OK kamera=avto_old transport=1 trafik=10 piyoda=28 svetofor=36 chegara=4 mission=4 hud=OK menyu=OK pauza=OK save_load=OK
+SELF_TEST_OK: dunyo=210x210 chunk=9 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=OK pul_drop=OK inventar=OK qurol=OK kamera=avto_old mission=4 save_v2=OK
 ```
 
-Preview rasmlari `screenshots/preview.png` va `screenshots/preview_menu.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
+Preview rasmlari `screenshots/preview.png`, `screenshots/preview_menu.png` va `screenshots/preview_store.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
 
 `[kuzatildi]` Yakuniy Windows `.exe` faylini REA bilan qo‘shimcha statik ochish urinishida Ghidra o‘rnatmasining `application.properties` fayli acquisition vaqtida o‘zgargani uchun `stable snapshot` olinmadi. Bu urinish yakuniy build haqida dalil bermadi va REA dalil ID’si yaratilmagan; natija o‘ylab topilmadi. Buildning ishga tushishi Godot self-test va `BUILD_EXIT_CODE=0` bilan alohida tasdiqlandi.
 

@@ -6,11 +6,14 @@ var yol: Array[Vector3] = []
 var indeks := 0
 var joriy_tezlik := 0.0
 var gildiraklar: Array[MeshInstance3D] = []
+var mustahkamlik := 90
+var zarba_sovush_vaqti := 0.0
+var vayron := false
 
 func _ready() -> void:
 	add_to_group("trafik")
 	collision_layer = 4
-	collision_mask = 1 | 4
+	collision_mask = 1 | 2 | 4 | 8
 	_yarat_model()
 
 func _yarat_model() -> void:
@@ -53,6 +56,7 @@ func _yarat_model() -> void:
 	_sfera("HaydovchiBosh", Vector3(-0.38, 1.52, -0.08), Vector3(0.32, 0.38, 0.32), _material(Color("c99168")))
 
 func _physics_process(delta: float) -> void:
+	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
 	if yol.is_empty():
 		return
 	var maqsad := yol[indeks]
@@ -64,13 +68,43 @@ func _physics_process(delta: float) -> void:
 	var yonalish := farq.normalized()
 	var kerak_burilish := atan2(-yonalish.x, -yonalish.z)
 	rotation.y = lerp_angle(rotation.y, kerak_burilish, delta * 2.3)
-	var maqsad_tezlik := 0.0 if _qizil_chiroq_yaqin() or _oldinda_mashina() else tezlik
+	var maqsad_tezlik := 0.0 if vayron or _qizil_chiroq_yaqin() or _oldinda_mashina() else tezlik
 	joriy_tezlik = move_toward(joriy_tezlik, maqsad_tezlik, (10.0 if maqsad_tezlik == 0.0 else 3.0) * delta)
 	velocity = -global_transform.basis.z * joriy_tezlik
 	velocity.y = -0.5
+	var zarba_tezligi: float = absf(joriy_tezlik)
 	move_and_slide()
+	_urilishni_tekshir(zarba_tezligi)
 	for gildirak in gildiraklar:
 		gildirak.rotate_x(joriy_tezlik * delta / 0.34)
+
+func _urilishni_tekshir(zarba_tezligi: float) -> void:
+	if zarba_sovush_vaqti > 0.0 or zarba_tezligi < 3.4 or get_slide_collision_count() == 0:
+		return
+	zarba_sovush_vaqti = 0.5
+	for i in range(get_slide_collision_count()):
+		var nishon = get_slide_collision(i).get_collider()
+		if is_instance_valid(nishon) and nishon.has_method("zarar_ol"):
+			var zarar := int(zarba_tezligi * (7.0 if nishon.is_in_group("piyoda") else 2.4))
+			nishon.zarar_ol(maxi(1, zarar), self)
+		zarar_ol(maxi(1, int((zarba_tezligi - 2.5) * 2.4)))
+	joriy_tezlik *= 0.48
+
+func zarar_ol(miqdor: int, _manba = null) -> void:
+	if vayron or miqdor <= 0:
+		return
+	mustahkamlik = maxi(0, mustahkamlik - miqdor)
+	if mustahkamlik <= 0:
+		vayron = true
+		joriy_tezlik = 0.0
+		var yozuv := Label3D.new()
+		yozuv.text = "NOSOZ"
+		yozuv.font_size = 24
+		yozuv.outline_size = 5
+		yozuv.modulate = Color("ff5c4d")
+		yozuv.position = Vector3(0, 2.15, 0)
+		yozuv.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		add_child(yozuv)
 
 func _qizil_chiroq_yaqin() -> bool:
 	var vertikal: bool = abs(global_transform.basis.z.z) > abs(global_transform.basis.z.x)

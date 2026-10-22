@@ -2,6 +2,8 @@ extends CharacterBody3D
 
 signal haydovchi_kirdi
 signal haydovchi_chiqdi
+signal mustahkamlik_ozgardi(qiymat)
+signal vayron_boldi
 
 @export var maksimal_tezlik := 24.0
 @export var tezlanish := 9.5
@@ -19,11 +21,15 @@ var haydovchi_modeli: Node3D
 var old_gildirak_pivotlari: Array[Node3D] = []
 var barcha_gildiraklar: Array[MeshInstance3D] = []
 var rul_burchagi := 0.0
+var maksimal_mustahkamlik := 160
+var mustahkamlik := 160
+var zarba_sovush_vaqti := 0.0
+var vayron := false
 
 func _ready() -> void:
 	add_to_group("transport")
 	collision_layer = 4
-	collision_mask = 1 | 4
+	collision_mask = 1 | 2 | 4 | 8
 	_yarat_kuzov()
 
 func _yarat_kuzov() -> void:
@@ -118,6 +124,7 @@ func _haydovchi_yarat() -> Node3D:
 	return root
 
 func _physics_process(delta: float) -> void:
+	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
 	if not is_on_floor():
 		velocity.y -= gravitatsiya * delta
 	else:
@@ -125,7 +132,7 @@ func _physics_process(delta: float) -> void:
 
 	var gaz := 0.0
 	var rul := 0.0
-	if boshqarilmoqda:
+	if boshqarilmoqda and not vayron:
 		gaz = Input.get_axis("orqaga", "oldinga")
 		rul = Input.get_axis("ong", "chap")
 		if gaz > 0.0:
@@ -157,10 +164,67 @@ func _physics_process(delta: float) -> void:
 	var old := -global_transform.basis.z
 	velocity.x = old.x * joriy_tezlik
 	velocity.z = old.z * joriy_tezlik
+	var zarba_tezligi: float = absf(joriy_tezlik)
 	move_and_slide()
+	_urilishni_tekshir(zarba_tezligi)
+
+func _urilishni_tekshir(zarba_tezligi: float) -> void:
+	if zarba_sovush_vaqti > 0.0 or zarba_tezligi < 3.6 or get_slide_collision_count() == 0:
+		return
+	var eng_kuchli := 0
+	for i in range(get_slide_collision_count()):
+		var toqnashuv := get_slide_collision(i)
+		var nishon = toqnashuv.get_collider()
+		var kuch := maxi(1, int((zarba_tezligi - 2.5) * 3.4))
+		eng_kuchli = maxi(eng_kuchli, kuch)
+		if is_instance_valid(nishon) and nishon != haydovchi and nishon.has_method("zarar_ol"):
+			var tashqi_zarar := int(zarba_tezligi * (7.5 if nishon.is_in_group("piyoda") else 2.8))
+			nishon.zarar_ol(maxi(1, tashqi_zarar), self)
+	if eng_kuchli > 0:
+		zarar_sovush_va_tezlik(eng_kuchli)
+
+func zarar_sovush_va_tezlik(miqdor: int) -> void:
+	zarba_sovush_vaqti = 0.42
+	zarar_ol(miqdor)
+	joriy_tezlik *= 0.42
+	if boshqarilmoqda and is_instance_valid(haydovchi) and miqdor >= 8:
+		haydovchi.zarar_ol(maxi(1, int(miqdor * 0.42)), self)
+
+func zarar_ol(miqdor: int, _manba = null) -> void:
+	if vayron or miqdor <= 0:
+		return
+	mustahkamlik = maxi(0, mustahkamlik - miqdor)
+	mustahkamlik_ozgardi.emit(mustahkamlik)
+	if mustahkamlik <= 0:
+		_vayron_bolish()
+
+func _vayron_bolish() -> void:
+	vayron = true
+	joriy_tezlik = 0.0
+	var ogohlantirish := Label3D.new()
+	ogohlantirish.name = "NosozYozuvi"
+	ogohlantirish.text = "NOSOZ"
+	ogohlantirish.font_size = 30
+	ogohlantirish.outline_size = 6
+	ogohlantirish.modulate = Color("ff5d4c")
+	ogohlantirish.position = Vector3(0, 2.7, 0)
+	ogohlantirish.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	add_child(ogohlantirish)
+	vayron_boldi.emit()
+	if boshqarilmoqda:
+		chiqish()
+
+func tiklash() -> void:
+	vayron = false
+	mustahkamlik = maksimal_mustahkamlik
+	joriy_tezlik = 0.0
+	var yozuv := get_node_or_null("NosozYozuvi")
+	if is_instance_valid(yozuv):
+		yozuv.queue_free()
+	mustahkamlik_ozgardi.emit(mustahkamlik)
 
 func kirish(oyinchi: CharacterBody3D) -> void:
-	if boshqarilmoqda:
+	if boshqarilmoqda or vayron:
 		return
 	boshqarilmoqda = true
 	haydovchi = oyinchi

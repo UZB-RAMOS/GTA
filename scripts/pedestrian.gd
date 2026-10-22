@@ -1,5 +1,8 @@
 extends CharacterBody3D
 
+signal pul_tushdi(joy, miqdor)
+signal halok_boldi(piyoda)
+
 @export var rang := Color("d7a93b")
 @export var markaz := Vector3.ZERO
 @export var radius := 8.0
@@ -11,6 +14,9 @@ var oyoqlar: Array[Node3D] = []
 var qollar: Array[Node3D] = []
 var qadam_vaqti := 0.0
 var kutish_vaqti := 0.0
+var jon := 75
+var olgan := false
+var collider: CollisionShape3D
 
 func _ready() -> void:
 	add_to_group("piyoda")
@@ -18,12 +24,13 @@ func _ready() -> void:
 	collision_mask = 1
 	rng.seed = hash(name)
 	tezlik = rng.randf_range(1.25, 2.05)
+	jon = rng.randi_range(65, 95)
 	_yarat_model()
 	_yangi_maqsad()
 
 func _yarat_model() -> void:
 	var boy := rng.randf_range(0.92, 1.08)
-	var collider := CollisionShape3D.new()
+	collider = CollisionShape3D.new()
 	var shakl := CapsuleShape3D.new()
 	shakl.radius = 0.31
 	shakl.height = 1.62 * boy
@@ -71,6 +78,8 @@ func _yarat_model() -> void:
 		oyoqlar.append(oyoq)
 
 func _physics_process(delta: float) -> void:
+	if olgan:
+		return
 	if kutish_vaqti > 0.0:
 		kutish_vaqti -= delta
 		velocity = Vector3.ZERO
@@ -106,6 +115,29 @@ func oyoqqlar_soni() -> int:
 
 func _yangi_maqsad() -> void:
 	maqsad = markaz + Vector3(rng.randf_range(-radius, radius), 0, rng.randf_range(-radius, radius))
+
+func zarar_ol(miqdor: int, _manba = null) -> void:
+	if olgan or miqdor <= 0:
+		return
+	jon -= miqdor
+	model_root.rotation.z = deg_to_rad(rng.randf_range(-8.0, 8.0))
+	if jon <= 0:
+		_halok_bolish()
+
+func _halok_bolish() -> void:
+	olgan = true
+	velocity = Vector3.ZERO
+	collision_layer = 0
+	collision_mask = 0
+	collider.set_deferred("disabled", true)
+	var tushadigan_pul := rng.randi_range(1800, 5200)
+	pul_tushdi.emit(global_position + Vector3.UP * 0.35, tushadigan_pul)
+	halok_boldi.emit(self)
+	var tween := create_tween()
+	tween.tween_property(model_root, "rotation:z", deg_to_rad(88.0), 0.42).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(model_root, "position:y", 0.18, 0.42)
+	tween.tween_interval(1.6)
+	tween.tween_callback(queue_free)
 
 func _material(r: Color, roughness := 0.82) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
