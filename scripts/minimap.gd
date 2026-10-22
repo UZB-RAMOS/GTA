@@ -2,14 +2,18 @@ extends Control
 
 var oyinchi: Node3D
 var dunyo_radiusi := 104.0
+var yangilash_vaqti := 0.0
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(180, 180)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	queue_redraw()
 
-func _process(_delta: float) -> void:
-	queue_redraw()
+func _process(delta: float) -> void:
+	yangilash_vaqti -= delta
+	if yangilash_vaqti <= 0.0:
+		yangilash_vaqti = 0.10
+		queue_redraw()
 
 func _draw() -> void:
 	var markaz := size * 0.5

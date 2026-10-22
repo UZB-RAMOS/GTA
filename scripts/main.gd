@@ -42,6 +42,15 @@ var dokon_qatlami: ColorRect
 var dokon_sarlavhasi: Label
 var dokon_mahsulotlari: VBoxContainer
 var joriy_dokon: Area3D
+var preview_rejimi := false
+var ishlash_testi := false
+var ishlash_test_kadri := 0
+var ishlash_test_boshlanishi := 0
+var ishlash_test_process_jami := 0.0
+var ishlash_test_physics_jami := 0.0
+var ishlash_test_fps_jami := 0.0
+var tizim_yangilash_vaqti := 0.0
+var yoritish_yangilash_vaqti := 0.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -59,17 +68,22 @@ func _ready() -> void:
 	_hud_yarat()
 	_topshiriq_bosqichini_qoy(0)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if OS.get_cmdline_user_args().has("--capture-preview"):
+	var argumentlar := OS.get_cmdline_user_args()
+	preview_rejimi = argumentlar.has("--capture-preview") or argumentlar.has("--capture-vehicle") or argumentlar.has("--capture-menu") or argumentlar.has("--capture-store")
+	ishlash_testi = argumentlar.has("--performance-test")
+	if argumentlar.has("--capture-preview"):
 		_yordamchi_preview_holat()
-	elif OS.get_cmdline_user_args().has("--capture-vehicle"):
+	elif argumentlar.has("--capture-vehicle"):
 		_yordamchi_transport_preview_holat()
-	elif OS.get_cmdline_user_args().has("--capture-store"):
+	elif argumentlar.has("--capture-store"):
 		pul = 75000
 		dokon_och(get_tree().get_first_node_in_group("dokon"))
-	elif OS.get_cmdline_user_args().has("--capture-menu"):
+	elif argumentlar.has("--capture-menu"):
 		_asosiy_menyuni_och()
-	elif OS.get_cmdline_user_args().has("--self-test"):
+	elif argumentlar.has("--self-test"):
 		_self_test.call_deferred()
+	elif ishlash_testi:
+		ishlash_test_boshlanishi = Time.get_ticks_msec()
 	else:
 		_asosiy_menyuni_och()
 
@@ -128,8 +142,8 @@ func _muhit_yarat() -> void:
 	env.ambient_light_color = Color("17243d")
 	env.ambient_light_energy = 0.30
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.glow_enabled = true
-	env.glow_intensity = 0.34
+	# Compatibility rendererda glow katta full-screen xarajat qiladi; emissive chiroqlar o‘zi qoladi.
+	env.glow_enabled = false
 	env.fog_enabled = true
 	env.fog_light_color = Color("121c31")
 	env.fog_density = 0.0048
@@ -141,8 +155,8 @@ func _muhit_yarat() -> void:
 	quyosh.rotation_degrees = Vector3(-48, -28, 0)
 	quyosh.light_color = Color("9eb7e8")
 	quyosh.light_energy = 0.30
-	quyosh.shadow_enabled = true
-	quyosh.directional_shadow_max_distance = 155.0
+	# Minglab procedural detallarda dinamik oy soyasi past quvvatli GPU’da asosiy qotish manbai edi.
+	quyosh.shadow_enabled = false
 	add_child(quyosh)
 
 func _shahar_yarat() -> void:
@@ -196,11 +210,13 @@ func _shahar_yarat() -> void:
 	_korsatkich_yarat(shahar, Vector3(3.8, 3.2, 23), "YANGI MAHALLA", Color("2c8b57"))
 
 func _yol_chiziqlari(parent: Node3D, vertikal: bool, koordinata: float) -> void:
+	var joylar: Array[Vector3] = []
 	for i in range(-20, 21):
 		var siljish := float(i) * 5.0
 		var p := Vector3(koordinata, 0.075, siljish) if vertikal else Vector3(siljish, 0.078, koordinata)
-		var size := Vector3(0.13, 0.025, 2.6) if vertikal else Vector3(2.6, 0.025, 0.13)
-		_vizual_quti(parent, p, size, Color("b79838"))
+		joylar.append(p)
+	var hajm := Vector3(0.13, 0.025, 2.6) if vertikal else Vector3(2.6, 0.025, 0.13)
+	_quti_multimesh(parent, "YolChiziqlari", hajm, joylar, Color("b79838"), 118.0)
 
 func _chunk_tuzilmasi_yarat(parent: Node3D) -> void:
 	for x in [-CHUNK_HAJMI, 0.0, CHUNK_HAJMI]:
@@ -235,6 +251,10 @@ func _bino_bezagi(bino: StaticBody3D, hajm: Vector3) -> void:
 			_vizual_quti(bino, Vector3(hajm.x * 0.22, y, -hajm.z * 0.5 - 0.48), Vector3(2.05, 0.13, 0.92), Color("b8b2a4"))
 			_vizual_quti(bino, Vector3(hajm.x * 0.22, y + 0.48, -hajm.z * 0.5 - 0.88), Vector3(2.05, 0.82, 0.055), Color("515a60"))
 	_vizual_quti(bino, Vector3(hajm.x * 0.24, hajm.y * 0.5 + 0.52, 0), Vector3(1.45, 0.72, 1.25), Color("a8aaa5"))
+	# Bino qobig‘i uzoqdan qoladi, deraza va balkonlar esa faqat foydali masofada chiziladi.
+	for child in bino.get_children():
+		if child is MeshInstance3D and child.get_index() > 1:
+			child.visibility_range_end = 64.0
 
 func _bozor_yarat(parent: Node3D) -> void:
 	var markaz := Vector3(-20, 0, -18)
@@ -252,6 +272,8 @@ func _mahalla_markazi_yarat(parent: Node3D) -> void:
 	mesh.top_radius = 2.2
 	mesh.bottom_radius = 2.2
 	mesh.height = 0.55
+	mesh.radial_segments = 18
+	mesh.rings = 1
 	favvora.mesh = mesh
 	favvora.position = markaz + Vector3(0, 0.32, 0)
 	favvora.material_override = _material(Color("67b9d1"), 0.25)
@@ -276,6 +298,8 @@ func _daraxtlar_yarat(parent: Node3D) -> void:
 		tana_mesh.top_radius = 0.18
 		tana_mesh.bottom_radius = 0.25
 		tana_mesh.height = 2.8
+		tana_mesh.radial_segments = 12
+		tana_mesh.rings = 1
 		tana.mesh = tana_mesh
 		tana.position.y = 1.4
 		tana.material_override = _material(Color("79543b"))
@@ -284,6 +308,8 @@ func _daraxtlar_yarat(parent: Node3D) -> void:
 		var barg_mesh := SphereMesh.new()
 		barg_mesh.radius = 1.35
 		barg_mesh.height = 2.4
+		barg_mesh.radial_segments = 12
+		barg_mesh.rings = 7
 		barg.mesh = barg_mesh
 		barg.position.y = 3.25
 		barg.material_override = _material(Color("438b4e"))
@@ -291,11 +317,15 @@ func _daraxtlar_yarat(parent: Node3D) -> void:
 
 func _piyodalar_yolaklari_yarat(parent: Node3D) -> void:
 	var oq := Color("b8b7b1")
+	var gorizontal_joylar: Array[Vector3] = []
+	var vertikal_joylar: Array[Vector3] = []
 	for x in YOL_KOORDINATALARI:
 		for z in YOL_KOORDINATALARI:
 			for i in range(-4, 5):
-				_vizual_quti(parent, Vector3(x + i * 0.88, 0.085, z - 7.0), Vector3(0.52, 0.025, 3.0), oq)
-				_vizual_quti(parent, Vector3(x - 7.0, 0.087, z + i * 0.88), Vector3(3.0, 0.025, 0.52), oq)
+				gorizontal_joylar.append(Vector3(x + i * 0.88, 0.085, z - 7.0))
+				vertikal_joylar.append(Vector3(x - 7.0, 0.087, z + i * 0.88))
+	_quti_multimesh(parent, "PiyodaYolagiGorizontal", Vector3(0.52, 0.025, 3.0), gorizontal_joylar, oq, 112.0)
+	_quti_multimesh(parent, "PiyodaYolagiVertikal", Vector3(3.0, 0.025, 0.52), vertikal_joylar, oq, 112.0)
 
 func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 	var metall := _material(Color("384044"), 0.55)
@@ -331,6 +361,9 @@ func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 		yoruglik.omni_range = 15.0
 		yoruglik.omni_attenuation = 1.35
 		yoruglik.shadow_enabled = false
+		yoruglik.distance_fade_enabled = true
+		yoruglik.distance_fade_begin = 27.0
+		yoruglik.distance_fade_length = 15.0
 		yoruglik.add_to_group("shahar_chirogi")
 		ustun.add_child(yoruglik)
 
@@ -435,8 +468,26 @@ func _vizual_quti_material(parent: Node3D, p: Vector3, hajm: Vector3, mat: Mater
 	mesh_node.mesh = mesh
 	mesh_node.position = p
 	mesh_node.material_override = mat
+	mesh_node.visibility_range_end = 112.0
 	parent.add_child(mesh_node)
 	return mesh_node
+
+func _quti_multimesh(parent: Node3D, nom: String, hajm: Vector3, joylar: Array[Vector3], rang: Color, korinish_masofasi: float) -> MultiMeshInstance3D:
+	var mesh := BoxMesh.new()
+	mesh.size = hajm
+	mesh.material = _material(rang)
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = mesh
+	multimesh.instance_count = joylar.size()
+	for i in range(joylar.size()):
+		multimesh.set_instance_transform(i, Transform3D(Basis.IDENTITY, joylar[i]))
+	var natija := MultiMeshInstance3D.new()
+	natija.name = nom
+	natija.multimesh = multimesh
+	natija.visibility_range_end = korinish_masofasi
+	parent.add_child(natija)
+	return natija
 
 func _vizual_silindr(parent: Node3D, p: Vector3, radius: float, balandlik: float, mat: Material) -> MeshInstance3D:
 	var mesh_node := MeshInstance3D.new()
@@ -444,9 +495,12 @@ func _vizual_silindr(parent: Node3D, p: Vector3, radius: float, balandlik: float
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = balandlik
+	mesh.radial_segments = 12
+	mesh.rings = 1
 	mesh_node.mesh = mesh
 	mesh_node.position = p
 	mesh_node.material_override = mat
+	mesh_node.visibility_range_end = 112.0
 	parent.add_child(mesh_node)
 	return mesh_node
 
@@ -455,10 +509,13 @@ func _vizual_sfera(parent: Node3D, p: Vector3, masshtab: Vector3, mat: Material)
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
+	mesh.radial_segments = 12
+	mesh.rings = 7
 	mesh_node.mesh = mesh
 	mesh_node.position = p
 	mesh_node.scale = masshtab
 	mesh_node.material_override = mat
+	mesh_node.visibility_range_end = 112.0
 	parent.add_child(mesh_node)
 	return mesh_node
 
@@ -596,6 +653,8 @@ func _belgi_yarat() -> void:
 	mesh.top_radius = 1.5
 	mesh.bottom_radius = 1.5
 	mesh.height = 0.18
+	mesh.radial_segments = 18
+	mesh.rings = 1
 	belgi_mesh.mesh = mesh
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(1.0, 0.79, 0.12, 0.72)
@@ -805,7 +864,10 @@ func _mahsulot_sotib_ol(id: String) -> void:
 			zirh = mini(100, zirh + 60)
 		"tayoq", "elektroshoker":
 			oyinchi.inventar_qosh(id)
-	_xabar("%s sotib olindi" % topildi.nom, 3.0)
+	var xabar_matni := "%s sotib olindi" % topildi.nom
+	if id in ["tayoq", "elektroshoker"]:
+		xabar_matni += " va qo‘lga olindi"
+	_xabar(xabar_matni, 3.0)
 	_dokon_tarkibini_yangila()
 
 func _dokon_yop() -> void:
@@ -1026,18 +1088,57 @@ func _process(delta: float) -> void:
 	if not get_tree().paused and belgi and belgi.visible:
 		belgi.rotation.y += delta * 0.8
 		belgi_mesh.position.y = 0.18 + sin(Time.get_ticks_msec() * 0.003) * 0.08
-	if not get_tree().paused:
-		_topshiriqni_tekshir()
-	_hud_yangila()
+	tizim_yangilash_vaqti -= delta
+	if tizim_yangilash_vaqti <= 0.0:
+		tizim_yangilash_vaqti = 0.10
+		if not get_tree().paused:
+			_topshiriqni_tekshir()
+		_hud_yangila()
 	if bildirishnoma_vaqti > 0.0:
 		bildirishnoma_vaqti -= delta
 		if bildirishnoma_vaqti <= 0.0:
 			bildirishnoma.text = ""
-	var argumentlar := OS.get_cmdline_user_args()
-	if argumentlar.has("--capture-preview") or argumentlar.has("--capture-vehicle") or argumentlar.has("--capture-menu") or argumentlar.has("--capture-store"):
+	yoritish_yangilash_vaqti -= delta
+	if yoritish_yangilash_vaqti <= 0.0:
+		yoritish_yangilash_vaqti = 0.30
+		_yoritish_lod_yangila()
+	if preview_rejimi:
 		preview_kadr += 1
 		if preview_kadr == 24:
 			_preview_saqlash.call_deferred()
+	if ishlash_testi:
+		_ishlash_testini_yangila()
+
+func _yoritish_lod_yangila() -> void:
+	if not is_instance_valid(oyinchi) or not is_instance_valid(oyinchi.kamera):
+		return
+	var kamera_joyi: Vector3 = oyinchi.kamera.global_position
+	for chiroq in get_tree().get_nodes_in_group("shahar_chirogi"):
+		chiroq.visible = chiroq.global_position.distance_squared_to(kamera_joyi) < 2304.0
+	for fara in get_tree().get_nodes_in_group("avtomobil_farasi"):
+		fara.visible = fara.global_position.distance_squared_to(kamera_joyi) < 3600.0
+
+func _ishlash_testini_yangila() -> void:
+	ishlash_test_kadri += 1
+	if ishlash_test_kadri <= 45:
+		return
+	ishlash_test_process_jami += Performance.get_monitor(Performance.TIME_PROCESS)
+	ishlash_test_physics_jami += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)
+	ishlash_test_fps_jami += Performance.get_monitor(Performance.TIME_FPS)
+	if ishlash_test_kadri < 225:
+		return
+	var namuna_soni := 180.0
+	var natija := {
+		"orta_fps": snappedf(ishlash_test_fps_jami / namuna_soni, 0.1),
+		"process_ms": snappedf(ishlash_test_process_jami * 1000.0 / namuna_soni, 0.01),
+		"physics_ms": snappedf(ishlash_test_physics_jami * 1000.0 / namuna_soni, 0.01),
+		"draw_call": int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+		"obyekt": int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)),
+		"primitive": int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+		"vaqt_ms": Time.get_ticks_msec() - ishlash_test_boshlanishi
+	}
+	print("PERFORMANCE_TEST: %s" % JSON.stringify(natija))
+	get_tree().quit()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("inventar"):
@@ -1181,9 +1282,9 @@ func _yuklash() -> void:
 	if is_instance_valid(oyinchi.joriy_transport):
 		oyinchi.joriy_transport.chiqish()
 	oyinchi.holat_qoy(data.get("player", {}))
-	pul = int(data.get("money", 0))
-	sogliq = int(data.get("health", 100))
-	zirh = int(data.get("armor", 0))
+	pul = maxi(0, int(data.get("money", 0)))
+	sogliq = clampi(int(data.get("health", 100)), 1, 100)
+	zirh = clampi(int(data.get("armor", 0)), 0, 100)
 	oyinchi.inventar_qoy(data.get("inventory", ["musht"]), String(data.get("selected_weapon", "musht")))
 	var transport_data: Dictionary = data.get("vehicle", {})
 	topshiriq_transporti.tiklash()
@@ -1204,6 +1305,7 @@ func _yordamchi_preview_holat() -> void:
 	oyinchi.global_position = Vector3(0, 0.2, 18)
 	oyinchi.rotation.y = PI
 	oyinchi.kamera_pivot.rotation.x = deg_to_rad(-12.0)
+	oyinchi.inventar_qosh("tayoq")
 	yordam_yozuvi.text = "WASD — harakat  |  Sichqon chap — urish  |  I — inventar  |  E — transport/do‘kon"
 
 func _yordamchi_transport_preview_holat() -> void:
@@ -1296,8 +1398,11 @@ func _self_test() -> void:
 	joriy_dokon = get_tree().get_first_node_in_group("dokon")
 	_mahsulot_sotib_ol("tayoq")
 	await get_tree().process_frame
-	if not oyinchi.inventar.has("tayoq") or pul != 38000:
+	if not oyinchi.inventar.has("tayoq") or pul != 38000 or oyinchi.faol_qurol != "tayoq" or not oyinchi.qurol_modellari["tayoq"].visible:
 		xatolar.append("Do‘kon xaridi yoki inventar ishlamadi")
+	oyinchi.inventar_qosh("elektroshoker")
+	if oyinchi.faol_qurol != "elektroshoker" or not oyinchi.qurol_modellari["elektroshoker"].visible or oyinchi.qurol_modellari["tayoq"].visible:
+		xatolar.append("Qurol modeli qo‘lda to‘g‘ri almashmadi")
 	oyinchi.inventar_qoy(["musht"], "musht")
 	pul = 0
 	oyinchi._hujum()
@@ -1309,6 +1414,8 @@ func _self_test() -> void:
 	if topshiriq_transporti.mustahkamlik != 150:
 		xatolar.append("Transport mustahkamligi zarar qabul qilmadi")
 	topshiriq_transporti.tiklash()
+	if topshiriq_transporti.salon_zarari_hisobla(12) != 0 or topshiriq_transporti.salon_zarari_hisobla(80) > 12:
+		xatolar.append("Salon himoyasi to‘qnashuv zararini to‘g‘ri cheklamadi")
 	var sinov_trafik = get_tree().get_first_node_in_group("trafik")
 	if is_instance_valid(sinov_trafik):
 		sinov_trafik.zarar_ol(999)
@@ -1359,7 +1466,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=OK pul_drop=OK inventar=OK urish=3_bosqich avto_tiklash=OK kamera=avto_old mission=4 save_v2=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
 		await get_tree().process_frame
 		get_tree().quit(0)
 	else:

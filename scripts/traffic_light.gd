@@ -5,13 +5,23 @@ extends Node3D
 var qizil_lampa: MeshInstance3D
 var sariq_lampa: MeshInstance3D
 var yashil_lampa: MeshInstance3D
+var yangilash_vaqti := 0.0
+var oxirgi_holat := -1
 
 func _ready() -> void:
 	add_to_group("svetofor")
 	_yarat_model()
+	yangilash_vaqti = float(get_instance_id() % 10) * 0.025
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	yangilash_vaqti -= delta
+	if yangilash_vaqti > 0.0:
+		return
+	yangilash_vaqti = 0.25
 	var holat := _joriy_holat(vertikal_yol)
+	if holat == oxirgi_holat:
+		return
+	oxirgi_holat = holat
 	_lampa_yon(qizil_lampa, holat == 0, Color("e52f32"))
 	_lampa_yon(sariq_lampa, holat == 1, Color("f1bd2b"))
 	_lampa_yon(yashil_lampa, holat == 2, Color("31c96b"))
@@ -68,6 +78,7 @@ func _quti(p: Vector3, hajm: Vector3, mat: Material) -> MeshInstance3D:
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 58.0
 	add_child(n)
 	return n
 
@@ -77,9 +88,12 @@ func _silindr(p: Vector3, radius: float, balandlik: float, mat: Material) -> Mes
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = balandlik
+	mesh.radial_segments = 12
+	mesh.rings = 1
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 58.0
 	add_child(n)
 	return n
 
@@ -88,9 +102,12 @@ func _sfera(p: Vector3, rang: Color) -> MeshInstance3D:
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.16
 	mesh.height = 0.32
+	mesh.radial_segments = 10
+	mesh.rings = 5
 	n.mesh = mesh
 	n.position = p
 	n.scale.z = 0.48
 	n.material_override = _material(rang.darkened(0.7), 0.3)
+	n.visibility_range_end = 58.0
 	add_child(n)
 	return n

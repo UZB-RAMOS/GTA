@@ -76,6 +76,7 @@ func _quti(parent: Node3D, p: Vector3, hajm: Vector3, mat: Material) -> MeshInst
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 138.0
 	parent.add_child(n)
 	return n
 

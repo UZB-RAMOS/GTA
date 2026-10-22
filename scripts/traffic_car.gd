@@ -13,12 +13,15 @@ var zarba_sovush_vaqti := 0.0
 var vayron := false
 var tiklanish_vaqti := 0.0
 var qotish_vaqti := 0.0
+var sezgi_vaqti := 0.0
+var toxtash_kerak := false
 
 func _ready() -> void:
 	add_to_group("trafik")
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4 | 8
 	_yarat_model()
+	sezgi_vaqti = float(get_instance_id() % 12) * 0.015
 
 func _yarat_model() -> void:
 	var collider := CollisionShape3D.new()
@@ -91,7 +94,11 @@ func _physics_process(delta: float) -> void:
 	var yonalish := farq.normalized()
 	var kerak_burilish := atan2(-yonalish.x, -yonalish.z)
 	rotation.y = lerp_angle(rotation.y, kerak_burilish, delta * 2.3)
-	var maqsad_tezlik := 0.0 if _qizil_chiroq_yaqin() or _oldinda_mashina() else tezlik
+	sezgi_vaqti -= delta
+	if sezgi_vaqti <= 0.0:
+		toxtash_kerak = _qizil_chiroq_yaqin() or _oldinda_mashina()
+		sezgi_vaqti = 0.18
+	var maqsad_tezlik := 0.0 if toxtash_kerak else tezlik
 	joriy_tezlik = move_toward(joriy_tezlik, maqsad_tezlik, (10.0 if maqsad_tezlik == 0.0 else 3.0) * delta)
 	velocity = -global_transform.basis.z * joriy_tezlik
 	velocity.y = -0.5
@@ -115,10 +122,16 @@ func _urilishni_tekshir(zarba_tezligi: float) -> void:
 	for i in range(get_slide_collision_count()):
 		var nishon = get_slide_collision(i).get_collider()
 		if is_instance_valid(nishon) and nishon.has_method("zarar_ol"):
-			var zarar := int(zarba_tezligi * (7.0 if nishon.is_in_group("piyoda") else 2.4))
-			nishon.zarar_ol(maxi(1, zarar), self)
+			var zarar := piyoda_urilish_zarari_hisobla(zarba_tezligi) if nishon.is_in_group("piyoda") else maxi(1, int(zarba_tezligi * 2.4))
+			if zarar > 0:
+				nishon.zarar_ol(zarar, self)
 		zarar_ol(maxi(1, int((zarba_tezligi - 2.5) * 2.4)))
 	joriy_tezlik *= 0.48
+
+func piyoda_urilish_zarari_hisobla(tezlik_m_s: float) -> int:
+	if tezlik_m_s < 4.0:
+		return 0
+	return clampi(int(round((tezlik_m_s - 4.0) * 5.0)), 1, 70)
 
 func zarar_ol(miqdor: int, _manba = null) -> void:
 	if vayron or miqdor <= 0:
@@ -209,6 +222,9 @@ func _farani_yarat() -> void:
 	fara.spot_angle = 34.0
 	fara.spot_attenuation = 1.08
 	fara.shadow_enabled = false
+	fara.distance_fade_enabled = true
+	fara.distance_fade_begin = 36.0
+	fara.distance_fade_length = 16.0
 	fara.add_to_group("avtomobil_farasi")
 	add_child(fara)
 
@@ -220,6 +236,7 @@ func _quti(nom: String, p: Vector3, hajm: Vector3, mat: Material) -> MeshInstanc
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 76.0
 	add_child(n)
 	return n
 
@@ -229,9 +246,12 @@ func _silindr(p: Vector3, radius: float, uzunlik: float, mat: Material) -> MeshI
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = uzunlik
+	mesh.radial_segments = 16
+	mesh.rings = 1
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 76.0
 	add_child(n)
 	return n
 
@@ -241,9 +261,12 @@ func _sfera(nom: String, p: Vector3, masshtab: Vector3, mat: Material) -> MeshIn
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
+	mesh.radial_segments = 14
+	mesh.rings = 7
 	n.mesh = mesh
 	n.position = p
 	n.scale = masshtab
 	n.material_override = mat
+	n.visibility_range_end = 76.0
 	add_child(n)
 	return n

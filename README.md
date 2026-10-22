@@ -50,18 +50,39 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - tayyorlanish, zarba va tiklanish bosqichlariga ega gavda bilan bajariladigan yaxshilangan urish animatsiyasi;
 - salon, eshik, ikki qavatli panjara, tor faralar, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan original JMJ shahar sedani;
 - Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
-- transportga kirish/chiqish animatsiyasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
+- transportga kirish/chiqish animatsiyasi, devor ichiga tushirmaydigan xavfsiz chiqish nuqtasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
 - svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan va zarardan keyin avtomatik tiklanadigan 16 ta batafsil trafik avtomobili;
 - turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC;
 - 100 ta ishlaydigan svetofor va xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
-- tezlikka bog‘liq urilish zarari, avtomobil mustahkamligi, o‘yinchi joni va himoya zirhi;
+- tezlikka bog‘liq muvozanatli urilish zarari, bir zarbaning qayta-qayta hisoblanishidan himoya, avtomobil mustahkamligi, o‘yinchi joni va himoya zirhi;
+- oddiy urilishlarda haydovchini himoyalaydigan kamar/kuzov modeli; faqat juda kuchli avariya 1–12 oralig‘ida salon zarari beradi;
 - NPC joni tugaganda tushadigan yig‘ib olinadigan pul modeli;
 - uchta interaktiv do‘kon: dori, zirh, metall tayoq va elektroshoker;
-- musht hamda ikkita maxsus yaqin jang quroli, ekrandagi inventar va qurol tanlash;
+- musht hamda kaftga to‘g‘ri biriktirilgan 3D metall tayoq va elektroshoker, ekrandagi inventar va qurol tanlash;
 - JSON orqali yuklanadigan 4 bosqichli topshiriq va mukofot;
 - HUD, minimap, asosiy menyu, pause va ovoz sozlamasi;
 - jon, zirh, pul, inventar, tanlangan qurol va transport mustahkamligini saqlaydigan `schema_version: 2` save/load tizimi;
 - Windows uchun bitta faylli `.exe` build.
+
+## Qotish bo‘yicha tuzatish
+
+`0.4.1` versiyasida ayni AMD Radeon Graphics kompyuterida bir xil avtomatik sahna bilan o‘lchov qilindi:
+
+| Ko‘rsatkich | Oldin | Keyin |
+|---|---:|---:|
+| O‘rtacha FPS | 7.8 | 29.7 |
+| Bir kadrdagi draw call | 4 677 | 537 |
+| Bir kadrdagi obyekt | 4 919 | 779 |
+| Bir kadrdagi primitive | 5 694 660 | 66 072 |
+| Asosiy kadr vaqti | 69.80 ms | 22.63 ms |
+
+Qotishga birgina xato emas, bir nechta yuk sabab bo‘lgan: yuqori segmentli procedural sfera/kapsulalar, yuzlab yo‘l belgilarining alohida chizilishi, 100 svetoforning har kadr material almashtirishi, har bir trafik mashinasining har kadr barcha svetoforlarni qidirishi, 57 ta uzoq masofali real-time chiroq, `glow` va dinamik oy soyasi. Tuzatishda pastroq, ko‘rinishni deyarli o‘zgartirmaydigan mesh segmentlari, `MultiMesh`, masofa bo‘yicha LOD, keshlangan trafik sezgisi, 4 Hz svetofor yangilanishi va kameraga yaqin yoritish qo‘llandi.
+
+Ichki o‘lchovni manba loyihada takrorlash:
+
+```powershell
+Godot_v4.7.2-stable_win64_console.exe --path . -- --performance-test
+```
 
 ## Loyiha tuzilishi
 
@@ -75,6 +96,6 @@ Standalone `.exe` hajmi GitHub’ning oddiy fayl chegarasidan katta. Shu sabab u
 
 ## Chegara
 
-Bu tijoriy AAA yoki fotorealistik mahsulot emas, balki batafsillashtirilgan, yakunlangan va o‘ynaladigan vertical-slice prototip. Modellar tashqi tayyor aktivlarsiz Godot ichida original procedural geometriya sifatida qurilgan. Mobil versiya foydalanuvchi qaroriga ko‘ra loyiha doirasidan chiqarilgan. Multiplayer, o‘qotar qurol, jinoyat/qidiruv tizimi va to‘liq Toshkent xaritasi bu versiyaga kirmaydi.
+Bu tijoriy AAA yoki fotorealistik mahsulot emas, balki batafsillashtirilgan, yakunlangan va o‘ynaladigan vertical-slice prototip. Modellar tashqi tayyor aktivlarsiz Godot ichida original procedural geometriya sifatida qurilgan. Mobil versiya foydalanuvchi qaroriga ko‘ra loyiha doirasidan chiqarilgan. Multiplayer, o‘qotar qurol, jinoyat/qidiruv tizimi va to‘liq Toshkent xaritasi bu versiyaga kirmaydi. FPS qurilma, drayver va sahnadagi kamera holatiga qarab farq qiladi.
 
 Brend, pullik shrift va mualliflik huquqi bilan himoyalangan kontentni ruxsatsiz qo‘shmang. Keyingi barcha 3D model, musiqa va teksturalarning litsenziya dalilini saqlash tavsiya etiladi.

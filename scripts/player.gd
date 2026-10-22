@@ -36,6 +36,7 @@ var kamera_yaw_offset := 0.0
 var inventar: Array[String] = ["musht"]
 var faol_qurol := "musht"
 var qurol_modellari: Dictionary = {}
+var qurol_ushlagich: Node3D
 var hujum_sovush_vaqti := 0.0
 var hujum_animatsiyasi := 0.0
 var hujum_davomiyligi := 0.0
@@ -342,37 +343,52 @@ func qurol_tanla(id: String) -> void:
 	if not inventar.has(id):
 		return
 	faol_qurol = id
+	qurol_holatini_yangila()
+
+func qurol_holatini_yangila() -> void:
 	for qurol_id in qurol_modellari:
-		qurol_modellari[qurol_id].visible = qurol_id == faol_qurol
+		var model: Node3D = qurol_modellari[qurol_id]
+		model.visible = faol and vizual_root.visible and qurol_id == faol_qurol and inventar.has(qurol_id)
 
 func faol_qurol_nomi() -> String:
 	return String(QUROLLAR.get(faol_qurol, QUROLLAR.musht).nom)
 
 func _qurollarni_yarat(ong_qol: Node3D) -> void:
+	qurol_ushlagich = Node3D.new()
+	qurol_ushlagich.name = "OngQolQurolUshlagichi"
+	qurol_ushlagich.position = Vector3(0, -0.92, -0.035)
+	ong_qol.add_child(qurol_ushlagich)
+
 	var tayoq_root := Node3D.new()
 	tayoq_root.name = "MetallTayoq"
-	tayoq_root.position = Vector3(0, -0.88, -0.25)
-	tayoq_root.rotation.x = deg_to_rad(72.0)
-	ong_qol.add_child(tayoq_root)
-	_mesh_kapsula(tayoq_root, "Tayoq", Vector3(0, -0.28, 0), 0.055, 0.92, _material(Color("707a80"), 0.3))
+	tayoq_root.position = Vector3(0, 0, -0.045)
+	tayoq_root.rotation.x = deg_to_rad(7.0)
+	qurol_ushlagich.add_child(tayoq_root)
+	_mesh_kapsula(tayoq_root, "RezinaTutqich", Vector3(0, -0.10, 0), 0.068, 0.30, _material(Color("20252a"), 0.72))
+	_mesh_kapsula(tayoq_root, "MetallQism", Vector3(0, -0.62, 0), 0.052, 0.86, _material(Color("879198"), 0.24))
+	_mesh_sfera(tayoq_root, "TayoqUchi", Vector3(0, -1.05, 0), Vector3(0.13, 0.13, 0.13), _material(Color("aeb7bb"), 0.22))
 	tayoq_root.visible = false
 	qurol_modellari["tayoq"] = tayoq_root
 
 	var shoker_root := Node3D.new()
 	shoker_root.name = "Elektroshoker"
-	shoker_root.position = Vector3(0, -0.91, -0.18)
-	shoker_root.rotation.x = deg_to_rad(74.0)
-	ong_qol.add_child(shoker_root)
-	_mesh_quti(shoker_root, "Korpus", Vector3.ZERO, Vector3(0.16, 0.32, 0.12), _material(Color("20272b"), 0.55))
-	_mesh_quti(shoker_root, "ElektrUchi", Vector3(0, -0.20, 0), Vector3(0.12, 0.12, 0.08), _material(Color("55c7ee"), 0.25))
+	shoker_root.position = Vector3(0, -0.17, -0.10)
+	shoker_root.rotation.x = deg_to_rad(6.0)
+	qurol_ushlagich.add_child(shoker_root)
+	_mesh_quti(shoker_root, "Korpus", Vector3(0, -0.11, 0), Vector3(0.18, 0.38, 0.14), _material(Color("20272b"), 0.55))
+	_mesh_quti(shoker_root, "UstkiPanel", Vector3(0, -0.05, -0.08), Vector3(0.12, 0.13, 0.035), _material(Color("38505c"), 0.42))
+	for x in [-0.055, 0.055]:
+		_mesh_kapsula(shoker_root, "ElektrUchi", Vector3(x, -0.34, 0), 0.018, 0.16, _material(Color("7be8ff"), 0.20))
 	shoker_root.visible = false
 	qurol_modellari["elektroshoker"] = shoker_root
+	qurol_holatini_yangila()
 
 func transportga_otir(transport: CharacterBody3D) -> void:
 	faol = false
 	joriy_transport = transport
 	velocity = Vector3.ZERO
 	vizual_root.visible = false
+	qurol_holatini_yangila()
 	collider.disabled = true
 	kamera_yaw_offset = 0.0
 	kamera_erkin_vaqt = 0.0
@@ -384,6 +400,7 @@ func transportdan_tush(chiqish_nuqta: Vector3, transport_burilishi := 0.0) -> vo
 	faol = true
 	joriy_transport = null
 	vizual_root.visible = true
+	qurol_holatini_yangila()
 	prujina.spring_length = 6.4
 	kamera.fov = 68.0
 	set_deferred("collision_layer", 2)
@@ -422,6 +439,8 @@ func _mesh_sfera(parent: Node3D, nom: String, p: Vector3, masshtab: Vector3, mat
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
+	mesh.radial_segments = 16
+	mesh.rings = 8
 	n.mesh = mesh
 	n.position = p
 	n.scale = masshtab
@@ -435,6 +454,8 @@ func _mesh_kapsula(parent: Node3D, nom: String, p: Vector3, radius: float, balan
 	var mesh := CapsuleMesh.new()
 	mesh.radius = radius
 	mesh.height = balandlik
+	mesh.radial_segments = 14
+	mesh.rings = 4
 	n.mesh = mesh
 	n.position = p
 	n.rotation = burilish

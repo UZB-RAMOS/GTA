@@ -253,18 +253,19 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 | Godot loyihasi | Tayyor, repository root papkasida | `[kuzatildi]` mahalliy fayllar |
 | Procedural shahar | 210 × 210 maydon, 9 ta 70 × 70 mantiqiy chunk, 5 × 5 chorraha tarmog‘i, fasadlar, bozor, bekatlar va ko‘cha jihozlari | `[strings]` `scripts/main.gd`; `[kuzatildi]` real OpenGL preview |
 | Personaj | Yurish, sprint, sakrash, o‘tirish, bo‘g‘inli original 3D tana va procedural animatsiya | `[strings]` `scripts/player.gd` |
-| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi va avtomatik old kamera | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd` |
+| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi, xavfsiz chiqish nuqtasi va avtomatik old kamera | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd`; `[kuzatildi]` self-test |
 | Trafik va piyodalar | 16 ta batafsil trafik avtomobili, 44 ta bo‘g‘inli piyoda NPC | `[kuzatildi]` `SELF_TEST_OK` |
 | Svetofor va chegara | 100 ta davriy svetofor, trafikning qizilda to‘xtashi va 4 ta ko‘rinmas fizik devor | `[strings]` `scripts/traffic_light.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
-| Zarar tizimi | Transport tezligiga bog‘liq to‘qnashuv zarari, o‘yinchi joni, zirh, avtomobil mustahkamligi va qayta tirilish | `[strings]` `scripts/player.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
-| Pul, do‘kon va inventar | NPC joni tugaganda pul pickup’i; 3 ta do‘kon; dori, zirh, metall tayoq va elektroshoker; musht va qurol tanlash | `[strings]` `scripts/money_pickup.gd`, `scripts/store.gd`, `scripts/player.gd`; `[kuzatildi]` self-test va OpenGL do‘kon preview’i |
+| Zarar tizimi | Tezlikka bog‘liq, qayta zarba immunitetli piyoda to‘qnashuvi; oddiy urilishda haydovchini himoyalaydigan va og‘ir avariyada 12 gacha zarar beradigan salon; jon, zirh, avtomobil mustahkamligi va qayta tirilish | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
+| Pul, do‘kon va inventar | NPC joni tugaganda pul pickup’i; 3 ta do‘kon; dori, zirh, metall tayoq va elektroshoker; qurol xariddan so‘ng tanlanadi va alohida kaft ushlagichidagi 3D model ko‘rinadi | `[strings]` `scripts/money_pickup.gd`, `scripts/store.gd`, `scripts/player.gd`; `[kuzatildi]` self-test va real OpenGL `screenshots/preview.png` |
 | Topshiriq | JSON’dan yuklanadigan 4 bosqich, 25 000 so‘m mukofot | `[strings]` `data/mission_01.json`; `[kuzatildi]` self-test |
 | UI | Asosiy menyu, HUD, minimap, pause va ovoz sozlamasi | `[kuzatildi]` real OpenGL preview |
 | Kirish brendi | Asosiy menyuning chap pastki qismida `by JMJ gems` yozuvi | `[kuzatildi]` `screenshots/preview_menu.png`; `[strings]` `scripts/main.gd` |
-| Tungi yoritish | Doimiy tungi muhit, 40 ta `OmniLight3D` ko‘cha fonari, emissiv derazalar va 17 ta avtomobil `SpotLight3D` farasi | `[kuzatildi]` real OpenGL `screenshots/preview.png` va `screenshots/preview_vehicle.png`; `[strings]` `scripts/main.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
+| Tungi yoritish | Doimiy tungi muhit, 40 ta `OmniLight3D` ko‘cha fonari, emissiv derazalar va 17 ta avtomobil `SpotLight3D` farasi; real yorug‘lik kameraga yaqin bo‘lganda LOD orqali faol | `[kuzatildi]` real OpenGL `screenshots/preview.png` va `screenshots/preview_vehicle.png`; `[strings]` `scripts/main.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
 | Jang animatsiyasi | Tayyorlanish, gavda bilan zarba va tiklanishdan iborat uch bosqich; zarar zarba kadrida beriladi | `[strings]` `scripts/player.gd`; `[kuzatildi]` self-test |
 | Original transport dizayni | Ikki qavatli panjara va tor farali JMJ sedani; trafik tiqilib qolsa yo‘lga qaytadi va zarardan keyin avtomatik tiklanadi | `[kuzatildi]` real OpenGL `screenshots/preview_vehicle.png`; `[strings]` `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
 | Personaj tafsilotlari | Ko‘z oqi va qorachiq, qosh, quloq, burun, yoqa, tugma, bosh qarashi va tinch holat harakati | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`; `[kuzatildi]` real OpenGL preview |
+| Ishlash optimizatsiyasi | Yo‘l chiziqlari va zebra `MultiMesh`; mesh segmentlari kamaytirilgan; masofaviy LOD; trafik sezgisi keshlangan; svetofor 4 Hz; HUD/minimap 10 Hz; uzoq chiroqlar o‘chadi | `[strings]` `scripts/main.gd`, `scripts/traffic_car.gd`, `scripts/traffic_light.gd`, `scripts/minimap.gd`; `[kuzatildi]` ichki performance test |
 | Save/load | `schema_version: 2`; joylashuv, jon, zirh, pul, inventar, tanlangan qurol va transport mustahkamligi | `[kuzatildi]` self-test |
 | Windows build | `builds/Toshkent_Sarguzashti.exe` | `[kuzatildi]` Godot export va build self-test |
 | Mobil build | Yo‘q | `[kuzatildi]` foydalanuvchi talabi |
@@ -272,8 +273,21 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 Self-test muvaffaqiyat mezoni:
 
 ```text
-SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=OK pul_drop=OK inventar=OK urish=3_bosqich avto_tiklash=OK kamera=avto_old mission=4 save_v2=OK
+SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK
 ```
+
+Qotish diagnostikasi bir xil Windows qurilmasi, AMD Radeon Graphics va `1280 × 720` OpenGL Compatibility oynasida 180 ta o‘lchov kadri bilan bajarildi — `[kuzatildi]`:
+
+| Ko‘rsatkich | Tuzatishdan oldin | Tuzatishdan keyin |
+|---|---:|---:|
+| O‘rtacha FPS | 7.8 | 29.7 |
+| Draw call | 4 677 | 537 |
+| Render obyektlari | 4 919 | 779 |
+| Primitive | 5 694 660 | 66 072 |
+| `TIME_PROCESS` | 69.80 ms | 22.63 ms |
+| `TIME_PHYSICS_PROCESS` | 10.85 ms | 9.90 ms |
+
+`[kuzatildi]` Qotishning asosiy sababi bitta nosozlik emas edi: yuqori segmentli procedural meshlar, yuzlab takroriy obyektlarning alohida draw call’i, 100 svetofor va 16 trafik mashinasidagi har-kadr global qidiruv, 57 real-time chiroq, full-screen `glow` va uzoq dinamik oy soyasi birga GPU/CPU chegarasini oshirgan. FPS qiymati boshqa apparatda aynan takrorlanishi kafolatlanmaydi.
 
 Preview rasmlari `screenshots/preview.png`, `screenshots/preview_vehicle.png`, `screenshots/preview_menu.png` va `screenshots/preview_store.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
 

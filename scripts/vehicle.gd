@@ -200,8 +200,9 @@ func _urilishni_tekshir(zarba_tezligi: float) -> void:
 		var kuch := maxi(1, int((zarba_tezligi - 2.5) * 3.4))
 		eng_kuchli = maxi(eng_kuchli, kuch)
 		if is_instance_valid(nishon) and nishon != haydovchi and nishon.has_method("zarar_ol"):
-			var tashqi_zarar := int(zarba_tezligi * (7.5 if nishon.is_in_group("piyoda") else 2.8))
-			nishon.zarar_ol(maxi(1, tashqi_zarar), self)
+			var tashqi_zarar := piyoda_urilish_zarari_hisobla(zarba_tezligi) if nishon.is_in_group("piyoda") else maxi(1, int(zarba_tezligi * 2.8))
+			if tashqi_zarar > 0:
+				nishon.zarar_ol(tashqi_zarar, self)
 	if eng_kuchli > 0:
 		zarar_sovush_va_tezlik(eng_kuchli)
 
@@ -209,8 +210,21 @@ func zarar_sovush_va_tezlik(miqdor: int) -> void:
 	zarba_sovush_vaqti = 0.42
 	zarar_ol(miqdor)
 	joriy_tezlik *= 0.42
-	if boshqarilmoqda and is_instance_valid(haydovchi) and miqdor >= 8:
-		haydovchi.zarar_ol(maxi(1, int(miqdor * 0.42)), self)
+	var salon_zarari := salon_zarari_hisobla(miqdor)
+	if boshqarilmoqda and is_instance_valid(haydovchi) and salon_zarari > 0:
+		haydovchi.zarar_ol(salon_zarari, self)
+
+func salon_zarari_hisobla(toqnashuv_zarari: int) -> int:
+	# Kamar va kuzov oddiy urilishlarni yutadi; faqat juda kuchli avariya haydovchiga zarar beradi.
+	if toqnashuv_zarari < 28:
+		return 0
+	return clampi(int(round((toqnashuv_zarari - 22) * 0.16)), 1, 12)
+
+func piyoda_urilish_zarari_hisobla(tezlik_m_s: float) -> int:
+	# Past tezlik tegib ketish hisoblanadi, yuqori tezlik xavfli, ammo bir kadrda cheksiz zarar yo‘q.
+	if tezlik_m_s < 4.0:
+		return 0
+	return clampi(int(round((tezlik_m_s - 4.0) * 5.0)), 1, 70)
 
 func zarar_ol(miqdor: int, _manba = null) -> void:
 	if vayron or miqdor <= 0:
@@ -264,7 +278,10 @@ func chiqish() -> void:
 		return
 	if abs(joriy_tezlik) > 1.4:
 		return
-	var chiqish_nuqta := global_position - global_transform.basis.x * 2.0 + Vector3.UP * 0.18
+	var xavfsiz_joy := _xavfsiz_chiqish_nuqtasi()
+	if xavfsiz_joy.is_empty():
+		return
+	var chiqish_nuqta: Vector3 = xavfsiz_joy.joy
 	var eski_haydovchi := haydovchi
 	boshqarilmoqda = false
 	haydovchi = null
@@ -272,6 +289,28 @@ func chiqish() -> void:
 	_eshik_animatsiyasi(false)
 	eski_haydovchi.transportdan_tush(chiqish_nuqta, rotation.y)
 	haydovchi_chiqdi.emit()
+
+func _xavfsiz_chiqish_nuqtasi() -> Dictionary:
+	var yon := global_transform.basis.x.normalized()
+	var old := -global_transform.basis.z.normalized()
+	var nomzodlar := [
+		global_position - yon * 2.05 + Vector3.UP * 0.18,
+		global_position + yon * 2.05 + Vector3.UP * 0.18,
+		global_position - old * 2.45 + Vector3.UP * 0.18,
+		global_position + old * 2.45 + Vector3.UP * 0.18
+	]
+	var shakl := CapsuleShape3D.new()
+	shakl.radius = 0.42
+	shakl.height = 1.80
+	for nomzod in nomzodlar:
+		var sorov := PhysicsShapeQueryParameters3D.new()
+		sorov.shape = shakl
+		sorov.transform = Transform3D(Basis.IDENTITY, nomzod + Vector3.UP * 0.92)
+		sorov.collision_mask = 1 | 4 | 8
+		sorov.exclude = [get_rid(), haydovchi.get_rid()]
+		if get_world_3d().direct_space_state.intersect_shape(sorov, 1).is_empty():
+			return {"joy": nomzod}
+	return {}
 
 func _eshik_animatsiyasi(_kirishmi: bool) -> void:
 	if not is_instance_valid(eshik_pivot):
@@ -313,6 +352,9 @@ func _farani_yarat(parent: Node3D) -> void:
 	fara.spot_angle = 33.0
 	fara.spot_attenuation = 1.05
 	fara.shadow_enabled = false
+	fara.distance_fade_enabled = true
+	fara.distance_fade_begin = 42.0
+	fara.distance_fade_length = 18.0
 	fara.add_to_group("avtomobil_farasi")
 	parent.add_child(fara)
 
@@ -334,6 +376,8 @@ func _silindr(parent: Node3D, nom: String, p: Vector3, radius: float, uzunlik: f
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = uzunlik
+	mesh.radial_segments = 18
+	mesh.rings = 1
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
@@ -346,6 +390,8 @@ func _sfera(parent: Node3D, nom: String, p: Vector3, masshtab: Vector3, mat: Mat
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
+	mesh.radial_segments = 16
+	mesh.rings = 8
 	n.mesh = mesh
 	n.position = p
 	n.scale = masshtab
@@ -359,6 +405,8 @@ func _kapsula(parent: Node3D, nom: String, p: Vector3, radius: float, balandlik:
 	var mesh := CapsuleMesh.new()
 	mesh.radius = radius
 	mesh.height = balandlik
+	mesh.radial_segments = 14
+	mesh.rings = 4
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
@@ -371,6 +419,8 @@ func _torus(parent: Node3D, nom: String, p: Vector3, radius: float, qalinlik: fl
 	var mesh := TorusMesh.new()
 	mesh.inner_radius = radius - qalinlik
 	mesh.outer_radius = radius
+	mesh.rings = 18
+	mesh.ring_segments = 8
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat

@@ -19,6 +19,9 @@ var kutish_vaqti := 0.0
 var jon := 75
 var olgan := false
 var collider: CollisionShape3D
+var zarar_immun_vaqti := 0.0
+var zarba_vaqti := 0.0
+var zarba_tezligi := Vector3.ZERO
 
 func _ready() -> void:
 	add_to_group("piyoda")
@@ -96,12 +99,24 @@ func _yarat_model() -> void:
 		oyoqlar.append(oyoq)
 
 func _physics_process(delta: float) -> void:
+	zarar_immun_vaqti = maxf(0.0, zarar_immun_vaqti - delta)
 	if olgan:
+		return
+	if zarba_vaqti > 0.0:
+		zarba_vaqti = maxf(0.0, zarba_vaqti - delta)
+		zarba_tezligi = zarba_tezligi.move_toward(Vector3.ZERO, 10.0 * delta)
+		velocity.x = zarba_tezligi.x
+		velocity.z = zarba_tezligi.z
+		velocity.y = -0.7
+		move_and_slide()
+		if _animatsiya_kerak():
+			_animatsiya(delta, false)
 		return
 	if kutish_vaqti > 0.0:
 		kutish_vaqti -= delta
 		velocity = Vector3.ZERO
-		_animatsiya(delta, false)
+		if _animatsiya_kerak():
+			_animatsiya(delta, false)
 		if kutish_vaqti <= 0.0:
 			_yangi_maqsad()
 		return
@@ -116,7 +131,12 @@ func _physics_process(delta: float) -> void:
 	velocity.z = yonalish.z * tezlik
 	velocity.y = -0.7
 	move_and_slide()
-	_animatsiya(delta, true)
+	if _animatsiya_kerak():
+		_animatsiya(delta, true)
+
+func _animatsiya_kerak() -> bool:
+	var faol_kamera := get_viewport().get_camera_3d()
+	return not is_instance_valid(faol_kamera) or global_position.distance_squared_to(faol_kamera.global_position) < 3025.0
 
 func _animatsiya(delta: float, yurmoqda: bool) -> void:
 	hayot_vaqti += delta
@@ -140,13 +160,21 @@ func oyoqqlar_soni() -> int:
 func _yangi_maqsad() -> void:
 	maqsad = markaz + Vector3(rng.randf_range(-radius, radius), 0, rng.randf_range(-radius, radius))
 
-func zarar_ol(miqdor: int, _manba = null) -> void:
-	if olgan or miqdor <= 0:
+func zarar_ol(miqdor: int, manba = null) -> void:
+	if olgan or miqdor <= 0 or zarar_immun_vaqti > 0.0:
 		return
+	zarar_immun_vaqti = 0.48
 	jon -= miqdor
 	model_root.rotation.z = deg_to_rad(rng.randf_range(-8.0, 8.0))
 	if jon <= 0:
 		_halok_bolish()
+	elif manba is Node3D:
+		var itarish: Vector3 = global_position - manba.global_position
+		itarish.y = 0.0
+		if itarish.length_squared() > 0.01:
+			zarba_tezligi = itarish.normalized() * clampf(1.5 + miqdor * 0.055, 1.5, 5.8)
+			zarba_vaqti = 0.30
+			kutish_vaqti = maxf(kutish_vaqti, 0.45)
 
 func _halok_bolish() -> void:
 	olgan = true
@@ -177,6 +205,7 @@ func _quti(parent: Node3D, nom: String, p: Vector3, hajm: Vector3, mat: Material
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 48.0
 	parent.add_child(n)
 	return n
 
@@ -186,10 +215,13 @@ func _sfera(parent: Node3D, nom: String, p: Vector3, masshtab: Vector3, mat: Mat
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
+	mesh.radial_segments = 12
+	mesh.rings = 6
 	n.mesh = mesh
 	n.position = p
 	n.scale = masshtab
 	n.material_override = mat
+	n.visibility_range_end = 48.0
 	parent.add_child(n)
 	return n
 
@@ -199,8 +231,11 @@ func _kapsula(parent: Node3D, nom: String, p: Vector3, radius: float, balandlik:
 	var mesh := CapsuleMesh.new()
 	mesh.radius = radius
 	mesh.height = balandlik
+	mesh.radial_segments = 12
+	mesh.rings = 4
 	n.mesh = mesh
 	n.position = p
 	n.material_override = mat
+	n.visibility_range_end = 48.0
 	parent.add_child(n)
 	return n
