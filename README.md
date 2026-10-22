@@ -40,6 +40,7 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 
 ## Tayyor imkoniyatlar
 
+- kirish menyusining pastki qismida `by JMJ gems` brend yozuvi;
 - 210 × 210 o‘lchamli, 9 ta 70 × 70 mantiqiy chunkka bo‘lingan procedural original shahar;
 - 5 × 5 chorraha tarmog‘i, uzun yo‘llar, batafsil fasadlar, piyodalar yo‘laklari, bozor, bekatlar, skameykalar, ko‘cha chiroqlari va daraxtlar;
 - bo‘g‘inli original 3D personaj: yurish, yugurish, sakrash, o‘tirish va procedural tana animatsiyasi;

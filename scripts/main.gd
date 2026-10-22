@@ -847,6 +847,16 @@ func _asosiy_menyu_yarat(canvas: CanvasLayer) -> void:
 	tag.add_theme_color_override("font_color", Color("d6f4e9"))
 	bezak.add_child(tag)
 
+	var brend := Label.new()
+	brend.name = "JMJGems"
+	brend.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	brend.position = Vector2(58, -76)
+	brend.size = Vector2(310, 40)
+	brend.text = "by JMJ gems"
+	brend.add_theme_font_size_override("font_size", 24)
+	brend.add_theme_color_override("font_color", Color("f6d66c"))
+	bezak.add_child(brend)
+
 	var tashqi := MarginContainer.new()
 	tashqi.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	tashqi.add_theme_constant_override("margin_left", 520)
@@ -1209,6 +1219,8 @@ func _self_test() -> void:
 		xatolar.append("Asosiy yoki pause menyusi yaratilmagan")
 	elif pauza_qatlami.find_children("*", "HSlider", true, false).size() != 1:
 		xatolar.append("Ovoz sozlamasi topilmadi")
+	if not is_instance_valid(asosiy_menyu.find_child("JMJGems", true, false)):
+		xatolar.append("Kirish menyusida by JMJ gems yozuvi topilmadi")
 	if not is_instance_valid(inventar_qatlami) or not is_instance_valid(dokon_qatlami):
 		xatolar.append("Inventar yoki do‘kon oynasi yaratilmagan")
 
