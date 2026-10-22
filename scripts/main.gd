@@ -1,0 +1,825 @@
+extends Node3D
+
+const PlayerScript = preload("res://scripts/player.gd")
+const VehicleScript = preload("res://scripts/vehicle.gd")
+const TrafficScript = preload("res://scripts/traffic_car.gd")
+const PedestrianScript = preload("res://scripts/pedestrian.gd")
+const MinimapScript = preload("res://scripts/minimap.gd")
+
+const SAVE_PATH := "user://toshkent_sarguzashti_save.json"
+
+var oyinchi: CharacterBody3D
+var topshiriq_transporti: CharacterBody3D
+var belgi: Node3D
+var belgi_mesh: MeshInstance3D
+var belgi_yozuvi: Label3D
+var topshiriq: Dictionary = {}
+var bosqich := 0
+var pul := 0
+var sogliq := 100
+var hud_yozuvi: Label
+var topshiriq_yozuvi: Label
+var tezlik_yozuvi: Label
+var yordam_yozuvi: Label
+var bildirishnoma: Label
+var pauza_qatlami: ColorRect
+var asosiy_menyu: ColorRect
+var davom_tugmasi: Button
+var minimap: Control
+var bildirishnoma_vaqti := 0.0
+var preview_kadr := 0
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	Engine.max_fps = 60
+	_kiritishlarni_sozla()
+	_muhit_yarat()
+	_shahar_yarat()
+	_oyinchi_yarat()
+	_transportlar_yarat()
+	_piyodalar_yarat()
+	_topshiriq_yukla()
+	_belgi_yarat()
+	_hud_yarat()
+	_topshiriq_bosqichini_qoy(0)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if OS.get_cmdline_user_args().has("--capture-preview"):
+		_yordamchi_preview_holat()
+	elif OS.get_cmdline_user_args().has("--capture-menu"):
+		_asosiy_menyuni_och()
+	elif OS.get_cmdline_user_args().has("--self-test"):
+		_self_test.call_deferred()
+	else:
+		_asosiy_menyuni_och()
+
+func _kiritishlarni_sozla() -> void:
+	_action_key("oldinga", KEY_W)
+	_action_key("oldinga", KEY_UP)
+	_action_key("orqaga", KEY_S)
+	_action_key("orqaga", KEY_DOWN)
+	_action_key("chap", KEY_A)
+	_action_key("chap", KEY_LEFT)
+	_action_key("ong", KEY_D)
+	_action_key("ong", KEY_RIGHT)
+	_action_key("sakrash", KEY_SPACE)
+	_action_key("yugurish", KEY_SHIFT)
+	_action_key("ozaro", KEY_E)
+	_action_key("qol_tormozi", KEY_SPACE)
+	_action_key("pauza", KEY_ESCAPE)
+	_action_key("saqlash", KEY_F5)
+	_action_key("yuklash", KEY_F9)
+
+func _action_key(action: StringName, tugma: Key) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	var event := InputEventKey.new()
+	event.physical_keycode = tugma
+	for mavjud in InputMap.action_get_events(action):
+		if mavjud is InputEventKey and mavjud.physical_keycode == tugma:
+			return
+	InputMap.action_add_event(action, event)
+
+func _muhit_yarat() -> void:
+	var world_env := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("79bfe4")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("d7e8f2")
+	env.ambient_light_energy = 0.50
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.glow_enabled = true
+	env.glow_intensity = 0.35
+	env.fog_enabled = true
+	env.fog_light_color = Color("cde3ec")
+	env.fog_density = 0.0035
+	world_env.environment = env
+	add_child(world_env)
+
+	var quyosh := DirectionalLight3D.new()
+	quyosh.name = "Quyosh"
+	quyosh.rotation_degrees = Vector3(-52, -32, 0)
+	quyosh.light_color = Color("fff1c6")
+	quyosh.light_energy = 1.0
+	quyosh.shadow_enabled = true
+	quyosh.directional_shadow_max_distance = 95.0
+	add_child(quyosh)
+
+func _shahar_yarat() -> void:
+	var shahar := Node3D.new()
+	shahar.name = "Shahar"
+	shahar.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(shahar)
+
+	_statik_quti(shahar, "Yer", Vector3(0, -0.3, 0), Vector3(130, 0.6, 130), Color("7b9d63"))
+
+	var asfalt := Color("343b43")
+	for x in [-42.0, 0.0, 42.0]:
+		_vizual_quti(shahar, Vector3(x, 0.025, 0), Vector3(11.5, 0.05, 128), asfalt)
+		_yol_chiziqlari(shahar, true, x)
+	for z in [-42.0, 0.0, 42.0]:
+		_vizual_quti(shahar, Vector3(0, 0.035, z), Vector3(128, 0.06, 11.5), asfalt)
+		_yol_chiziqlari(shahar, false, z)
+
+	var trotuar := Color("b9b3a5")
+	for x in [-35.5, -6.7, 6.7, 35.5]:
+		_vizual_quti(shahar, Vector3(x, 0.10, 0), Vector3(1.8, 0.2, 128), trotuar)
+	for z in [-35.5, -6.7, 6.7, 35.5]:
+		_vizual_quti(shahar, Vector3(0, 0.105, z), Vector3(128, 0.21, 1.8), trotuar)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261021
+	var markazlar := [-27.0, -14.5, 14.5, 27.0]
+	var ranglar := [Color("e8cf9a"), Color("d99d77"), Color("a9c5d9"), Color("d9d3bd"), Color("b8c99d")]
+	var bino_id := 0
+	for x in markazlar:
+		for z in markazlar:
+			if Vector2(x, z).distance_to(Vector2(-18, -8)) < 10.0:
+				continue
+			var balandlik := rng.randf_range(5.0, 15.0)
+			var hajm := Vector3(rng.randf_range(7.0, 10.5), balandlik, rng.randf_range(7.0, 10.5))
+			var p := Vector3(x + rng.randf_range(-1.3, 1.3), balandlik * 0.5, z + rng.randf_range(-1.3, 1.3))
+			var bino := _statik_quti(shahar, "Bino_%02d" % bino_id, p, hajm, ranglar[bino_id % ranglar.size()])
+			_bino_bezagi(bino, hajm)
+			bino_id += 1
+
+	_bozor_yarat(shahar)
+	_mahalla_markazi_yarat(shahar)
+	_daraxtlar_yarat(shahar)
+	_korsatkich_yarat(shahar, Vector3(-3.8, 3.2, -18), "ESKI SHAHAR", Color("126aa0"))
+	_korsatkich_yarat(shahar, Vector3(3.8, 3.2, 23), "YANGI MAHALLA", Color("2c8b57"))
+
+func _yol_chiziqlari(parent: Node3D, vertikal: bool, koordinata: float) -> void:
+	for i in range(-12, 13):
+		var siljish := float(i) * 5.0
+		var p := Vector3(koordinata, 0.075, siljish) if vertikal else Vector3(siljish, 0.078, koordinata)
+		var size := Vector3(0.13, 0.025, 2.6) if vertikal else Vector3(2.6, 0.025, 0.13)
+		_vizual_quti(parent, p, size, Color("f1d562"))
+
+func _bino_bezagi(bino: StaticBody3D, hajm: Vector3) -> void:
+	var tom_rangi := Color("924f3d")
+	_vizual_quti(bino, Vector3(0, hajm.y * 0.5 + 0.16, 0), Vector3(hajm.x + 0.25, 0.32, hajm.z + 0.25), tom_rangi)
+	var oyna_mat := _material(Color("315b72"), 0.45)
+	var qavatlar := maxi(1, int(hajm.y / 3.0))
+	for qavat in range(qavatlar):
+		for taraf in [-1.0, 1.0]:
+			var oyna := MeshInstance3D.new()
+			var mesh := BoxMesh.new()
+			mesh.size = Vector3(1.2, 1.15, 0.06)
+			oyna.mesh = mesh
+			oyna.position = Vector3(-hajm.x * 0.22, -hajm.y * 0.5 + 1.6 + qavat * 2.5, taraf * (hajm.z * 0.5 + 0.035))
+			oyna.material_override = oyna_mat
+			bino.add_child(oyna)
+
+func _bozor_yarat(parent: Node3D) -> void:
+	var markaz := Vector3(-20, 0, -18)
+	_statik_quti(parent, "Bozor", markaz + Vector3(0, 1.5, 0), Vector3(11, 3, 9), Color("e9b94f"))
+	_vizual_quti(parent, markaz + Vector3(0, 3.35, 0), Vector3(12, 0.35, 10), Color("2e9c75"))
+	_korsatkich_yarat(parent, markaz + Vector3(0, 4.4, 4.7), "MAHALLA BOZORI", Color("197052"))
+	for x in [-4.0, -1.35, 1.35, 4.0]:
+		_vizual_quti(parent, markaz + Vector3(x, 1.45, 4.53), Vector3(1.8, 1.25, 0.08), Color("244d68"))
+
+func _mahalla_markazi_yarat(parent: Node3D) -> void:
+	var markaz := Vector3(38, 0, 35)
+	_vizual_quti(parent, markaz + Vector3(0, 0.12, 0), Vector3(9, 0.24, 9), Color("d9c39c"))
+	var favvora := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 2.2
+	mesh.bottom_radius = 2.2
+	mesh.height = 0.55
+	favvora.mesh = mesh
+	favvora.position = markaz + Vector3(0, 0.32, 0)
+	favvora.material_override = _material(Color("67b9d1"), 0.25)
+	parent.add_child(favvora)
+	_korsatkich_yarat(parent, markaz + Vector3(0, 3.1, -4.2), "MAHALLA MARKAZI", Color("805d35"))
+
+func _daraxtlar_yarat(parent: Node3D) -> void:
+	var joylar := [
+		Vector3(-33, 0, -33), Vector3(-9, 0, -31), Vector3(10, 0, -29), Vector3(33, 0, -31),
+		Vector3(-31, 0, -9), Vector3(30, 0, -9), Vector3(-31, 0, 10), Vector3(31, 0, 11),
+		Vector3(-31, 0, 31), Vector3(-9, 0, 31), Vector3(10, 0, 31), Vector3(29, 0, 29)
+	]
+	for p in joylar:
+		var daraxt := Node3D.new()
+		daraxt.position = p
+		parent.add_child(daraxt)
+		var tana := MeshInstance3D.new()
+		var tana_mesh := CylinderMesh.new()
+		tana_mesh.top_radius = 0.18
+		tana_mesh.bottom_radius = 0.25
+		tana_mesh.height = 2.8
+		tana.mesh = tana_mesh
+		tana.position.y = 1.4
+		tana.material_override = _material(Color("79543b"))
+		daraxt.add_child(tana)
+		var barg := MeshInstance3D.new()
+		var barg_mesh := SphereMesh.new()
+		barg_mesh.radius = 1.35
+		barg_mesh.height = 2.4
+		barg.mesh = barg_mesh
+		barg.position.y = 3.25
+		barg.material_override = _material(Color("438b4e"))
+		daraxt.add_child(barg)
+
+func _korsatkich_yarat(parent: Node3D, p: Vector3, matn: String, rang: Color) -> void:
+	var label := Label3D.new()
+	label.text = matn
+	label.font_size = 42
+	label.outline_size = 8
+	label.modulate = Color.WHITE
+	label.outline_modulate = rang.darkened(0.45)
+	label.position = p
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	parent.add_child(label)
+
+func _statik_quti(parent: Node3D, nom: String, p: Vector3, hajm: Vector3, rang: Color) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = nom
+	body.position = p
+	body.collision_layer = 1
+	body.collision_mask = 0
+	parent.add_child(body)
+	var collider := CollisionShape3D.new()
+	var shakl := BoxShape3D.new()
+	shakl.size = hajm
+	collider.shape = shakl
+	body.add_child(collider)
+	_vizual_quti(body, Vector3.ZERO, hajm, rang)
+	return body
+
+func _vizual_quti(parent: Node3D, p: Vector3, hajm: Vector3, rang: Color) -> MeshInstance3D:
+	var mesh_node := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = hajm
+	mesh_node.mesh = mesh
+	mesh_node.position = p
+	mesh_node.material_override = _material(rang)
+	parent.add_child(mesh_node)
+	return mesh_node
+
+func _material(rang: Color, roughness := 0.82) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = rang
+	mat.roughness = roughness
+	return mat
+
+func _oyinchi_yarat() -> void:
+	oyinchi = PlayerScript.new()
+	oyinchi.process_mode = Node.PROCESS_MODE_PAUSABLE
+	oyinchi.position = Vector3(-7, 0.2, -4)
+	add_child(oyinchi)
+
+func _transportlar_yarat() -> void:
+	topshiriq_transporti = VehicleScript.new()
+	topshiriq_transporti.process_mode = Node.PROCESS_MODE_PAUSABLE
+	topshiriq_transporti.name = "KokMikroavtobus"
+	topshiriq_transporti.kuzov_rangi = Color("1f78c8")
+	topshiriq_transporti.position = Vector3(-12, 0.2, 2)
+	topshiriq_transporti.rotation.y = PI / 2.0
+	add_child(topshiriq_transporti)
+
+	var yol: Array[Vector3] = [
+		Vector3(-42, 0.2, -42), Vector3(42, 0.2, -42),
+		Vector3(42, 0.2, 42), Vector3(-42, 0.2, 42)
+	]
+	var ranglar := [Color("c84b48"), Color("e6b447"), Color("f0eee6"), Color("4a9867"), Color("7e58a8"), Color("db743c")]
+	for i in range(6):
+		var mashina := TrafficScript.new()
+		mashina.process_mode = Node.PROCESS_MODE_PAUSABLE
+		mashina.name = "Trafik_%02d" % i
+		mashina.rang = ranglar[i]
+		mashina.tezlik = 5.8 + i * 0.35
+		mashina.yol = yol.duplicate()
+		mashina.indeks = i % yol.size()
+		mashina.position = yol[(i + 1) % yol.size()].lerp(yol[i % yol.size()], 0.25 + 0.1 * (i % 3))
+		add_child(mashina)
+
+func _piyodalar_yarat() -> void:
+	var ranglar := [Color("d48742"), Color("4b79b8"), Color("8fbe5a"), Color("b45f8f"), Color("d3c151")]
+	var markazlar := [Vector3(-20, 0.1, -18), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25)]
+	for i in range(16):
+		var piyoda := PedestrianScript.new()
+		piyoda.process_mode = Node.PROCESS_MODE_PAUSABLE
+		piyoda.name = "Piyoda_%02d" % i
+		piyoda.rang = ranglar[i % ranglar.size()]
+		piyoda.markaz = markazlar[i % markazlar.size()]
+		piyoda.radius = 6.0 + float(i % 3)
+		piyoda.position = piyoda.markaz + Vector3(float((i % 4) - 2) * 1.5, 0, float((i % 3) - 1) * 1.4)
+		add_child(piyoda)
+
+func _topshiriq_yukla() -> void:
+	var matn := FileAccess.get_file_as_string("res://data/mission_01.json")
+	var parsed = JSON.parse_string(matn)
+	if parsed is Dictionary:
+		topshiriq = parsed
+	else:
+		push_error("Topshiriq JSON yuklanmadi")
+		topshiriq = {"title": "Topshiriq", "stages": []}
+
+func _belgi_yarat() -> void:
+	belgi = Node3D.new()
+	belgi.name = "TopshiriqBelgisi"
+	add_child(belgi)
+	belgi_mesh = MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 1.5
+	mesh.bottom_radius = 1.5
+	mesh.height = 0.18
+	belgi_mesh.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.79, 0.12, 0.72)
+	mat.emission_enabled = true
+	mat.emission = Color("ffcf32")
+	mat.emission_energy_multiplier = 1.7
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	belgi_mesh.material_override = mat
+	belgi.add_child(belgi_mesh)
+
+	belgi_yozuvi = Label3D.new()
+	belgi_yozuvi.text = "MAQSAD"
+	belgi_yozuvi.font_size = 34
+	belgi_yozuvi.outline_size = 7
+	belgi_yozuvi.position.y = 2.2
+	belgi_yozuvi.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	belgi.add_child(belgi_yozuvi)
+
+func _hud_yarat() -> void:
+	var canvas := CanvasLayer.new()
+	canvas.name = "HUD"
+	add_child(canvas)
+
+	var yuqori_panel := ColorRect.new()
+	yuqori_panel.position = Vector2(18, 18)
+	yuqori_panel.size = Vector2(330, 108)
+	yuqori_panel.color = Color(0.025, 0.045, 0.065, 0.82)
+	canvas.add_child(yuqori_panel)
+
+	hud_yozuvi = Label.new()
+	hud_yozuvi.position = Vector2(36, 30)
+	hud_yozuvi.size = Vector2(295, 88)
+	hud_yozuvi.add_theme_font_size_override("font_size", 22)
+	hud_yozuvi.add_theme_color_override("font_color", Color("f7f1df"))
+	canvas.add_child(hud_yozuvi)
+
+	tezlik_yozuvi = Label.new()
+	tezlik_yozuvi.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	tezlik_yozuvi.position = Vector2(-255, -92)
+	tezlik_yozuvi.size = Vector2(220, 55)
+	tezlik_yozuvi.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	tezlik_yozuvi.add_theme_font_size_override("font_size", 30)
+	tezlik_yozuvi.add_theme_color_override("font_color", Color("f6d65c"))
+	canvas.add_child(tezlik_yozuvi)
+
+	var mission_panel := ColorRect.new()
+	mission_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	mission_panel.position = Vector2(-330, -92)
+	mission_panel.size = Vector2(660, 62)
+	mission_panel.color = Color(0.025, 0.045, 0.065, 0.86)
+	canvas.add_child(mission_panel)
+
+	topshiriq_yozuvi = Label.new()
+	topshiriq_yozuvi.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	topshiriq_yozuvi.position = Vector2(-310, -82)
+	topshiriq_yozuvi.size = Vector2(620, 44)
+	topshiriq_yozuvi.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	topshiriq_yozuvi.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	topshiriq_yozuvi.add_theme_font_size_override("font_size", 21)
+	topshiriq_yozuvi.add_theme_color_override("font_color", Color("ffdd68"))
+	canvas.add_child(topshiriq_yozuvi)
+
+	yordam_yozuvi = Label.new()
+	yordam_yozuvi.position = Vector2(20, 140)
+	yordam_yozuvi.size = Vector2(570, 70)
+	yordam_yozuvi.text = "WASD — yurish/haydash  |  Shift — yugurish\nE — transportga kirish/chiqish  |  F5 — saqlash  |  F9 — yuklash  |  Esc — pauza"
+	yordam_yozuvi.add_theme_font_size_override("font_size", 16)
+	yordam_yozuvi.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
+	canvas.add_child(yordam_yozuvi)
+
+	bildirishnoma = Label.new()
+	bildirishnoma.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	bildirishnoma.position = Vector2(-230, 35)
+	bildirishnoma.size = Vector2(460, 48)
+	bildirishnoma.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bildirishnoma.add_theme_font_size_override("font_size", 22)
+	bildirishnoma.add_theme_color_override("font_color", Color("8ff0b0"))
+	canvas.add_child(bildirishnoma)
+
+	minimap = MinimapScript.new()
+	minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	minimap.position = Vector2(-202, 18)
+	minimap.size = Vector2(180, 180)
+	minimap.oyinchi = oyinchi
+	canvas.add_child(minimap)
+
+	_pauza_menyusi_yarat(canvas)
+	_asosiy_menyu_yarat(canvas)
+
+func _asosiy_menyu_yarat(canvas: CanvasLayer) -> void:
+	asosiy_menyu = ColorRect.new()
+	asosiy_menyu.name = "AsosiyMenyu"
+	asosiy_menyu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	asosiy_menyu.color = Color("183049")
+	asosiy_menyu.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	asosiy_menyu.visible = false
+	canvas.add_child(asosiy_menyu)
+
+	var bezak := ColorRect.new()
+	bezak.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	bezak.position = Vector2(0, 0)
+	bezak.size = Vector2(420, 720)
+	bezak.color = Color("167d67")
+	asosiy_menyu.add_child(bezak)
+
+	var chiziq := ColorRect.new()
+	chiziq.position = Vector2(420, 0)
+	chiziq.size = Vector2(12, 720)
+	chiziq.color = Color("f1c84b")
+	asosiy_menyu.add_child(chiziq)
+
+	var shahar_nomi := Label.new()
+	shahar_nomi.position = Vector2(54, 70)
+	shahar_nomi.size = Vector2(330, 220)
+	shahar_nomi.text = "TOSHKENT\nSARGUZASHTI"
+	shahar_nomi.add_theme_font_size_override("font_size", 44)
+	shahar_nomi.add_theme_color_override("font_color", Color("fff7df"))
+	bezak.add_child(shahar_nomi)
+
+	var tag := Label.new()
+	tag.position = Vector2(58, 250)
+	tag.size = Vector2(315, 120)
+	tag.text = "Original ochiq-dunyo prototipi\nMahalla • transport • sarguzasht"
+	tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tag.add_theme_font_size_override("font_size", 19)
+	tag.add_theme_color_override("font_color", Color("d6f4e9"))
+	bezak.add_child(tag)
+
+	var tashqi := MarginContainer.new()
+	tashqi.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tashqi.add_theme_constant_override("margin_left", 520)
+	tashqi.add_theme_constant_override("margin_right", 150)
+	tashqi.add_theme_constant_override("margin_top", 115)
+	tashqi.add_theme_constant_override("margin_bottom", 95)
+	asosiy_menyu.add_child(tashqi)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 18)
+	tashqi.add_child(vbox)
+	var sarlavha := Label.new()
+	sarlavha.text = "ASOSIY MENYU"
+	sarlavha.add_theme_font_size_override("font_size", 34)
+	sarlavha.add_theme_color_override("font_color", Color("f6d66c"))
+	vbox.add_child(sarlavha)
+	var yangi := Button.new()
+	yangi.text = "Yangi o‘yin"
+	yangi.custom_minimum_size.y = 58
+	yangi.pressed.connect(_yangi_oyin)
+	vbox.add_child(yangi)
+	davom_tugmasi = Button.new()
+	davom_tugmasi.text = "Davom etish"
+	davom_tugmasi.custom_minimum_size.y = 58
+	davom_tugmasi.pressed.connect(_davom_etish)
+	vbox.add_child(davom_tugmasi)
+	var sozlama := Button.new()
+	sozlama.text = "Sozlamalar"
+	sozlama.custom_minimum_size.y = 58
+	sozlama.pressed.connect(_menyu_sozlamalari)
+	vbox.add_child(sozlama)
+	var muallif := Button.new()
+	muallif.text = "Mualliflar va litsenziyalar"
+	muallif.custom_minimum_size.y = 58
+	muallif.pressed.connect(_mualliflar)
+	vbox.add_child(muallif)
+	var chiqish := Button.new()
+	chiqish.text = "O‘yindan chiqish"
+	chiqish.custom_minimum_size.y = 58
+	chiqish.pressed.connect(_oyindan_chiqish)
+	vbox.add_child(chiqish)
+
+func _asosiy_menyuni_och() -> void:
+	get_tree().paused = true
+	asosiy_menyu.visible = true
+	pauza_qatlami.visible = false
+	davom_tugmasi.disabled = not FileAccess.file_exists(SAVE_PATH)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _yangi_oyin() -> void:
+	pul = 0
+	sogliq = 100
+	if is_instance_valid(oyinchi.joriy_transport):
+		oyinchi.joriy_transport.chiqish()
+	oyinchi.global_position = Vector3(-7, 0.2, -4)
+	oyinchi.rotation = Vector3.ZERO
+	topshiriq_transporti.global_position = Vector3(-12, 0.2, 2)
+	topshiriq_transporti.rotation.y = PI / 2.0
+	topshiriq_transporti.joriy_tezlik = 0.0
+	_topshiriq_bosqichini_qoy(0, false)
+	asosiy_menyu.visible = false
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_xabar("Xush kelibsiz! Birinchi topshiriqni boshlang.", 4.0)
+
+func _davom_etish() -> void:
+	asosiy_menyu.visible = false
+	_yuklash()
+
+func _menyu_sozlamalari() -> void:
+	_xabar("Ovoz va grafika sozlamalari Pause menyusida mavjud", 4.0)
+
+func _mualliflar() -> void:
+	_xabar("Original kod va procedural grafika • Godot Engine MIT License", 6.0)
+
+func _pauza_menyusi_yarat(canvas: CanvasLayer) -> void:
+	pauza_qatlami = ColorRect.new()
+	pauza_qatlami.name = "PauzaMenyusi"
+	pauza_qatlami.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pauza_qatlami.color = Color(0.01, 0.02, 0.035, 0.87)
+	pauza_qatlami.visible = false
+	pauza_qatlami.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	canvas.add_child(pauza_qatlami)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pauza_qatlami.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(470, 440)
+	center.add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 15)
+	panel.add_child(vbox)
+	var sarlavha := Label.new()
+	sarlavha.text = "TOSHKENT SARGUZASHTI"
+	sarlavha.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sarlavha.add_theme_font_size_override("font_size", 34)
+	vbox.add_child(sarlavha)
+	var izoh := Label.new()
+	izoh.text = "Pauza"
+	izoh.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	izoh.add_theme_font_size_override("font_size", 22)
+	vbox.add_child(izoh)
+	var davom := Button.new()
+	davom.text = "Davom etish"
+	davom.pressed.connect(_pauzani_yop)
+	vbox.add_child(davom)
+	var saqla := Button.new()
+	saqla.text = "O‘yinni saqlash"
+	saqla.pressed.connect(_saqlash)
+	vbox.add_child(saqla)
+	var yukla := Button.new()
+	yukla.text = "Saqlangan o‘yinni yuklash"
+	yukla.pressed.connect(_yuklash)
+	vbox.add_child(yukla)
+	var ovoz_label := Label.new()
+	ovoz_label.text = "Umumiy ovoz"
+	vbox.add_child(ovoz_label)
+	var ovoz := HSlider.new()
+	ovoz.min_value = -40.0
+	ovoz.max_value = 0.0
+	ovoz.value = 0.0
+	ovoz.value_changed.connect(_ovoz_ozgardi)
+	vbox.add_child(ovoz)
+	var sifat := Label.new()
+	sifat.text = "Grafika: Compatibility / Windows"
+	sifat.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(sifat)
+	var chiqish := Button.new()
+	chiqish.text = "O‘yindan chiqish"
+	chiqish.pressed.connect(_oyindan_chiqish)
+	vbox.add_child(chiqish)
+
+func _process(delta: float) -> void:
+	if not get_tree().paused and belgi and belgi.visible:
+		belgi.rotation.y += delta * 0.8
+		belgi_mesh.position.y = 0.18 + sin(Time.get_ticks_msec() * 0.003) * 0.08
+	if not get_tree().paused:
+		_topshiriqni_tekshir()
+	_hud_yangila()
+	if bildirishnoma_vaqti > 0.0:
+		bildirishnoma_vaqti -= delta
+		if bildirishnoma_vaqti <= 0.0:
+			bildirishnoma.text = ""
+	var argumentlar := OS.get_cmdline_user_args()
+	if argumentlar.has("--capture-preview") or argumentlar.has("--capture-menu"):
+		preview_kadr += 1
+		if preview_kadr == 24:
+			_preview_saqlash.call_deferred()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pauza"):
+		if asosiy_menyu.visible:
+			return
+		_pauzani_almashtir()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("saqlash"):
+		_saqlash()
+	elif event.is_action_pressed("yuklash"):
+		_yuklash()
+
+func _topshiriqni_tekshir() -> void:
+	if topshiriq.is_empty() or bosqich >= topshiriq.stages.size():
+		return
+	var stage: Dictionary = topshiriq.stages[bosqich]
+	var tur := String(stage.get("type", ""))
+	if tur == "reach_area" and oyinchi.global_position.distance_to(belgi.global_position) < 2.4:
+		_topshiriq_bosqichini_qoy(bosqich + 1)
+	elif tur == "enter_vehicle" and topshiriq_transporti.boshqarilmoqda and oyinchi.joriy_transport == topshiriq_transporti:
+		_topshiriq_bosqichini_qoy(bosqich + 1)
+	elif tur == "reach_area_vehicle" and topshiriq_transporti.boshqarilmoqda and topshiriq_transporti.global_position.distance_to(belgi.global_position) < 4.2:
+		_topshiriq_bosqichini_qoy(bosqich + 1)
+
+func _topshiriq_bosqichini_qoy(yangi_bosqich: int, mukofot_ber := true) -> void:
+	if topshiriq.is_empty() or topshiriq.stages.is_empty():
+		return
+	bosqich = clampi(yangi_bosqich, 0, topshiriq.stages.size() - 1)
+	var stage: Dictionary = topshiriq.stages[bosqich]
+	var tur := String(stage.get("type", ""))
+	if tur == "complete":
+		if mukofot_ber:
+			pul += int(stage.get("reward", 0))
+		belgi.visible = false
+		_xabar(String(stage.get("text", "Topshiriq bajarildi")), 8.0)
+	else:
+		var target: Array = stage.get("target", [0.0, 0.2, 0.0])
+		belgi.global_position = Vector3(float(target[0]), float(target[1]), float(target[2]))
+		belgi.visible = true
+		belgi_yozuvi.text = "MAQSAD %d/%d" % [bosqich + 1, topshiriq.stages.size() - 1]
+		_xabar(String(stage.get("text", "Yangi maqsad")), 3.5)
+
+func _hud_yangila() -> void:
+	if not hud_yozuvi:
+		return
+	var holat := "PIYODA"
+	var speed := 0
+	if is_instance_valid(oyinchi.joriy_transport):
+		holat = "TRANSPORTDA"
+		speed = oyinchi.joriy_transport.tezlik_kmh()
+	hud_yozuvi.text = "TOSHKENT SARGUZASHTI\nSog‘liq: %d     Pul: %s so‘m\nHolat: %s" % [sogliq, _pul_format(pul), holat]
+	tezlik_yozuvi.text = "%03d km/soat" % speed if holat == "TRANSPORTDA" else ""
+	if topshiriq and not topshiriq.stages.is_empty():
+		var stage: Dictionary = topshiriq.stages[bosqich]
+		topshiriq_yozuvi.text = "%s — %s" % [topshiriq.get("title", "Topshiriq"), stage.get("text", "")]
+
+func _pul_format(qiymat: int) -> String:
+	var s := str(qiymat)
+	var natija := ""
+	while s.length() > 3:
+		natija = " " + s.right(3) + natija
+		s = s.left(s.length() - 3)
+	return s + natija
+
+func _xabar(matn: String, vaqt := 2.5) -> void:
+	if bildirishnoma:
+		bildirishnoma.text = matn
+		bildirishnoma_vaqti = vaqt
+
+func _pauzani_almashtir() -> void:
+	if get_tree().paused:
+		_pauzani_yop()
+	else:
+		get_tree().paused = true
+		pauza_qatlami.visible = true
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _pauzani_yop() -> void:
+	get_tree().paused = false
+	pauza_qatlami.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _ovoz_ozgardi(qiymat: float) -> void:
+	AudioServer.set_bus_volume_db(0, qiymat)
+
+func _oyindan_chiqish() -> void:
+	get_tree().quit()
+
+func _saqlash() -> void:
+	var data := {
+		"schema_version": 1,
+		"timestamp": Time.get_datetime_string_from_system(),
+		"player": oyinchi.holat_ol(),
+		"mission_stage": bosqich,
+		"money": pul,
+		"health": sogliq,
+		"vehicle": {
+			"position": [topshiriq_transporti.global_position.x, topshiriq_transporti.global_position.y, topshiriq_transporti.global_position.z],
+			"rotation_y": topshiriq_transporti.rotation.y
+		}
+	}
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(data, "  "))
+		file.close()
+		_xabar("O‘yin saqlandi", 3.0)
+	else:
+		_xabar("Saqlashda xato", 3.0)
+
+func _yuklash() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		_xabar("Saqlangan o‘yin topilmadi", 3.0)
+		return
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	if not parsed is Dictionary:
+		_xabar("Save fayli buzilgan", 3.0)
+		return
+	var data: Dictionary = parsed
+	if int(data.get("schema_version", 0)) != 1:
+		_xabar("Save versiyasi mos emas", 3.0)
+		return
+	if is_instance_valid(oyinchi.joriy_transport):
+		oyinchi.joriy_transport.chiqish()
+	oyinchi.holat_qoy(data.get("player", {}))
+	pul = int(data.get("money", 0))
+	sogliq = int(data.get("health", 100))
+	var transport_data: Dictionary = data.get("vehicle", {})
+	if transport_data.has("position"):
+		var p: Array = transport_data.position
+		topshiriq_transporti.global_position = Vector3(float(p[0]), float(p[1]), float(p[2]))
+		topshiriq_transporti.rotation.y = float(transport_data.get("rotation_y", 0.0))
+	_topshiriq_bosqichini_qoy(int(data.get("mission_stage", 0)), false)
+	_xabar("Saqlangan o‘yin yuklandi", 3.0)
+	if get_tree().paused and not asosiy_menyu.visible:
+		_pauzani_yop()
+
+func _yordamchi_preview_holat() -> void:
+	# Avtomatik preview shahar va UI’ni yaxshiroq ko‘rsatadigan nuqtadan olinadi.
+	oyinchi.global_position = Vector3(-5, 0.2, 18)
+	oyinchi.rotation.y = deg_to_rad(205.0)
+	oyinchi.kamera_pivot.rotation.x = deg_to_rad(-15.0)
+	yordam_yozuvi.text = "WASD — harakat  |  E — transport  |  Esc — pauza"
+
+func _preview_saqlash() -> void:
+	await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	var fayl_nomi := "preview_menu.png" if OS.get_cmdline_user_args().has("--capture-menu") else "preview.png"
+	var yol := ProjectSettings.globalize_path("res://screenshots/" + fayl_nomi)
+	var xato := image.save_png(yol)
+	if xato != OK:
+		push_error("Preview saqlanmadi: %s" % xato)
+	get_tree().quit()
+
+func _self_test() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var xatolar: Array[String] = []
+	var shahar := get_node_or_null("Shahar")
+	if not is_instance_valid(shahar) or shahar.get_child_count() < 40:
+		xatolar.append("Procedural shahar to‘liq yaratilmagan")
+	if not is_instance_valid(oyinchi) or not is_instance_valid(oyinchi.kamera) or not oyinchi.kamera.current:
+		xatolar.append("Personaj yoki uchinchi shaxs kamerasi yaratilmagan")
+	if get_tree().get_nodes_in_group("transport").size() != 1:
+		xatolar.append("Boshqariladigan transport soni noto‘g‘ri")
+	if get_tree().get_nodes_in_group("trafik").size() != 6:
+		xatolar.append("Trafik soni noto‘g‘ri")
+	if get_tree().get_nodes_in_group("piyoda").size() != 16:
+		xatolar.append("Piyodalar soni noto‘g‘ri")
+	if topshiriq.get("stages", []).size() != 4:
+		xatolar.append("Topshiriq bosqichlari yuklanmadi")
+	if not is_instance_valid(hud_yozuvi) or not is_instance_valid(topshiriq_yozuvi) or not is_instance_valid(minimap):
+		xatolar.append("HUD yoki minimap yaratilmagan")
+	if not is_instance_valid(asosiy_menyu) or not is_instance_valid(pauza_qatlami):
+		xatolar.append("Asosiy yoki pause menyusi yaratilmagan")
+	elif pauza_qatlami.find_children("*", "HSlider", true, false).size() != 1:
+		xatolar.append("Ovoz sozlamasi topilmadi")
+
+	_asosiy_menyuni_och()
+	if not get_tree().paused or not asosiy_menyu.visible:
+		xatolar.append("Asosiy menyu pause holatini yoqmadi")
+	_yangi_oyin()
+	if get_tree().paused or asosiy_menyu.visible:
+		xatolar.append("Yangi o‘yin menyudan to‘g‘ri boshlanmadi")
+	_pauzani_almashtir()
+	if not get_tree().paused or not pauza_qatlami.visible:
+		xatolar.append("Pause menyusi ochilmadi")
+	_pauzani_yop()
+	if get_tree().paused or pauza_qatlami.visible:
+		xatolar.append("Pause menyusi yopilmadi")
+
+	oyinchi.global_position = belgi.global_position
+	_topshiriqni_tekshir()
+	if bosqich != 1:
+		xatolar.append("Reach-area bosqichi ishlamadi")
+
+	topshiriq_transporti.kirish(oyinchi)
+	_topshiriqni_tekshir()
+	if bosqich != 2 or oyinchi.joriy_transport != topshiriq_transporti:
+		xatolar.append("Transportga kirish bosqichi ishlamadi")
+
+	topshiriq_transporti.global_position = belgi.global_position
+	_topshiriqni_tekshir()
+	if bosqich != 3 or pul != 25000:
+		xatolar.append("Topshiriq yakuni yoki mukofot ishlamadi")
+
+	_saqlash()
+	if not FileAccess.file_exists(SAVE_PATH):
+		xatolar.append("Save fayli yaratilmagan")
+	else:
+		pul = 0
+		_yuklash()
+		if pul != 25000:
+			xatolar.append("Save/load pul qiymatini tiklamadi")
+
+	if xatolar.is_empty():
+		print("SELF_TEST_OK: shahar=OK kamera=OK transport=1 trafik=6 piyoda=16 mission=4 hud=OK menyu=OK pauza=OK sozlama=OK save_load=OK")
+		get_tree().quit(0)
+	else:
+		for xato in xatolar:
+			push_error("SELF_TEST: " + xato)
+		get_tree().quit(1)
+

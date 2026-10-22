@@ -1,0 +1,31 @@
+{
+  "id": "mahalla_yetkazish_01",
+  "title": "Mahallaga yetkazish",
+  "stages": [
+    {
+      "id": "boshlash",
+      "type": "reach_area",
+      "text": "Sariq belgiga boring",
+      "target": [-18.0, 0.2, -8.0]
+    },
+    {
+      "id": "transport_ol",
+      "type": "enter_vehicle",
+      "text": "Ko‘k mikroavtobusga o‘tiring",
+      "target": [-12.0, 0.7, 2.0]
+    },
+    {
+      "id": "manzilga_bor",
+      "type": "reach_area_vehicle",
+      "text": "Yukni mahalla markaziga olib boring",
+      "target": [38.0, 0.2, 35.0]
+    },
+    {
+      "id": "yakun",
+      "type": "complete",
+      "text": "Topshiriq bajarildi! Mukofot: 25 000 so‘m",
+      "reward": 25000
+    }
+  ]
+}
+

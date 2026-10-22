@@ -1,0 +1,19 @@
+# Godot cache va editor holati
+.godot/
+editor_data/
+export_templates/
+feature_profiles/
+script_templates/
+text_editor_themes/
+
+# Mahalliy runtime va loglar
+runtime_appdata/
+runtime_localappdata/
+*.log
+
+# Standalone build GitHub chegarasidan katta; ZIP repositoryda saqlanadi
+builds/*.exe
+
+# Windows vaqtinchalik fayllari
+Thumbs.db
+Desktop.ini
