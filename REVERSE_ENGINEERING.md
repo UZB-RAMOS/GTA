@@ -261,6 +261,10 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 | Topshiriq | JSON’dan yuklanadigan 4 bosqich, 25 000 so‘m mukofot | `[strings]` `data/mission_01.json`; `[kuzatildi]` self-test |
 | UI | Asosiy menyu, HUD, minimap, pause va ovoz sozlamasi | `[kuzatildi]` real OpenGL preview |
 | Kirish brendi | Asosiy menyuning chap pastki qismida `by JMJ gems` yozuvi | `[kuzatildi]` `screenshots/preview_menu.png`; `[strings]` `scripts/main.gd` |
+| Tungi yoritish | Doimiy tungi muhit, 40 ta `OmniLight3D` ko‘cha fonari, emissiv derazalar va 17 ta avtomobil `SpotLight3D` farasi | `[kuzatildi]` real OpenGL `screenshots/preview.png` va `screenshots/preview_vehicle.png`; `[strings]` `scripts/main.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
+| Jang animatsiyasi | Tayyorlanish, gavda bilan zarba va tiklanishdan iborat uch bosqich; zarar zarba kadrida beriladi | `[strings]` `scripts/player.gd`; `[kuzatildi]` self-test |
+| Original transport dizayni | Ikki qavatli panjara va tor farali JMJ sedani; trafik tiqilib qolsa yo‘lga qaytadi va zarardan keyin avtomatik tiklanadi | `[kuzatildi]` real OpenGL `screenshots/preview_vehicle.png`; `[strings]` `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
+| Personaj tafsilotlari | Ko‘z oqi va qorachiq, qosh, quloq, burun, yoqa, tugma, bosh qarashi va tinch holat harakati | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`; `[kuzatildi]` real OpenGL preview |
 | Save/load | `schema_version: 2`; joylashuv, jon, zirh, pul, inventar, tanlangan qurol va transport mustahkamligi | `[kuzatildi]` self-test |
 | Windows build | `builds/Toshkent_Sarguzashti.exe` | `[kuzatildi]` Godot export va build self-test |
 | Mobil build | Yo‘q | `[kuzatildi]` foydalanuvchi talabi |
@@ -268,10 +272,10 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 Self-test muvaffaqiyat mezoni:
 
 ```text
-SELF_TEST_OK: dunyo=210x210 chunk=9 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=OK pul_drop=OK inventar=OK qurol=OK kamera=avto_old mission=4 save_v2=OK
+SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=OK pul_drop=OK inventar=OK urish=3_bosqich avto_tiklash=OK kamera=avto_old mission=4 save_v2=OK
 ```
 
-Preview rasmlari `screenshots/preview.png`, `screenshots/preview_menu.png` va `screenshots/preview_store.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
+Preview rasmlari `screenshots/preview.png`, `screenshots/preview_vehicle.png`, `screenshots/preview_menu.png` va `screenshots/preview_store.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
 
 `[kuzatildi]` Yakuniy Windows `.exe` faylini REA bilan qo‘shimcha statik ochish urinishida Ghidra o‘rnatmasining `application.properties` fayli acquisition vaqtida o‘zgargani uchun `stable snapshot` olinmadi. Bu urinish yakuniy build haqida dalil bermadi va REA dalil ID’si yaratilmagan; natija o‘ylab topilmadi. Buildning ishga tushishi Godot self-test va `BUILD_EXIT_CODE=0` bilan alohida tasdiqlandi.
 

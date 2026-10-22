@@ -38,7 +38,11 @@ var faol_qurol := "musht"
 var qurol_modellari: Dictionary = {}
 var hujum_sovush_vaqti := 0.0
 var hujum_animatsiyasi := 0.0
+var hujum_davomiyligi := 0.0
+var hujum_zarba_bajarildi := false
+var joriy_hujum_sozlamasi: Dictionary = {}
 var zarar_immun_vaqti := 0.0
+var hayot_vaqti := 0.0
 
 func _ready() -> void:
 	name = "Oyinchi"
@@ -57,8 +61,8 @@ func _yarat_tana() -> void:
 	vizual_root.add_child(gavda_root)
 
 	var teri := _material(Color("c88d66"), 0.88)
-	var koylak := _material(Color("2b73bd"), 0.83)
-	var shim := _material(Color("26384a"), 0.92)
+	var koylak := _material(Color("173957"), 0.83)
+	var shim := _material(Color("172433"), 0.92)
 	var poyabzal := _material(Color("171a1d"), 0.78)
 	var soch_mat := _material(Color("241b18"), 0.96)
 	var oq := _material(Color("f4f1e7"), 0.55)
@@ -73,8 +77,16 @@ func _yarat_tana() -> void:
 	_mesh_sfera(gavda_root, "OngKoz", Vector3(0.105, 2.06, -0.282), Vector3(0.075, 0.055, 0.035), oq)
 	_mesh_sfera(gavda_root, "ChapQorachiq", Vector3(-0.105, 2.06, -0.303), Vector3(0.025, 0.028, 0.018), qora)
 	_mesh_sfera(gavda_root, "OngQorachiq", Vector3(0.105, 2.06, -0.303), Vector3(0.025, 0.028, 0.018), qora)
+	for x in [-0.105, 0.105]:
+		var qosh := _mesh_quti(gavda_root, "Qosh", Vector3(x, 2.135, -0.306), Vector3(0.11, 0.025, 0.018), soch_mat)
+		qosh.rotation.z = deg_to_rad(5.0 * sign(x))
+	for x in [-0.292, 0.292]:
+		_mesh_sfera(gavda_root, "Quloq", Vector3(x, 2.02, -0.005), Vector3(0.075, 0.14, 0.055), teri)
 	_mesh_kapsula(gavda_root, "Burun", Vector3(0, 1.99, -0.303), 0.035, 0.13, teri, Vector3(deg_to_rad(72), 0, 0))
 	_mesh_quti(gavda_root, "Ogiz", Vector3(0, 1.89, -0.296), Vector3(0.13, 0.025, 0.018), _material(Color("80443d")))
+	_mesh_quti(gavda_root, "KoylakYoqasi", Vector3(0, 1.66, -0.202), Vector3(0.30, 0.10, 0.025), _material(Color("d5d8d6"), 0.8))
+	for y in [1.48, 1.31, 1.14]:
+		_mesh_sfera(gavda_root, "Tugma", Vector3(0, y, -0.197), Vector3(0.035, 0.035, 0.018), qora)
 
 	for tomon in [-1.0, 1.0]:
 		var qol_pivot := Node3D.new()
@@ -147,8 +159,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		qurol_tanla("elektroshoker")
 
 func _physics_process(delta: float) -> void:
+	hayot_vaqti += delta
 	hujum_sovush_vaqti = maxf(0.0, hujum_sovush_vaqti - delta)
+	var hujum_oldin := hujum_animatsiyasi
 	hujum_animatsiyasi = maxf(0.0, hujum_animatsiyasi - delta)
+	if hujum_oldin > 0.0 and not hujum_zarba_bajarildi and hujum_davomiyligi > 0.0:
+		var hujum_progressi := 1.0 - hujum_animatsiyasi / hujum_davomiyligi
+		if hujum_progressi >= 0.42:
+			hujum_zarba_bajarildi = true
+			_hujum_zarbasini_ber()
 	zarar_immun_vaqti = maxf(0.0, zarar_immun_vaqti - delta)
 	if not faol:
 		_transport_kamerasi(delta)
@@ -198,15 +217,44 @@ func _harakat_animatsiyasi(delta: float, haqiqiy_tezlik: float, maqsad_tezlik: f
 		harakat_vaqti += delta * (7.2 if maqsad_tezlik < 6.0 else 10.2)
 	var kuch: float = clampf(haqiqiy_tezlik / maxf(maqsad_tezlik, 0.1), 0.0, 1.0)
 	var qadam := sin(harakat_vaqti) * (0.62 if not otiribdi else 0.28) * kuch if yurmoqda else 0.0
+	var hujum_faol := hujum_animatsiyasi > 0.0 and hujum_davomiyligi > 0.0
+	var hujum_progressi := 1.0 - hujum_animatsiyasi / hujum_davomiyligi if hujum_faol else 0.0
 	for i in range(oyoq_pivotlari.size()):
 		var belgi := -1.0 if i == 0 else 1.0
 		oyoq_pivotlari[i].rotation.x = lerp_angle(oyoq_pivotlari[i].rotation.x, qadam * belgi + (0.42 if otiribdi else 0.0), delta * 13.0)
 		var qol_maqsadi := -qadam * belgi * 0.75 + (-0.25 if otiribdi else 0.0)
-		if i == 1 and hujum_animatsiyasi > 0.0:
-			qol_maqsadi = -1.95 + sin(hujum_animatsiyasi * 22.0) * 0.35
-		qol_pivotlari[i].rotation.x = lerp_angle(qol_pivotlari[i].rotation.x, qol_maqsadi, delta * 16.0)
+		var qol_y := 0.0
+		var qol_z := 0.0
+		if hujum_faol:
+			if i == 1:
+				var orqaga_burchak := -1.15 if faol_qurol == "tayoq" else -0.72
+				var oldinga_burchak := 1.42 if faol_qurol == "tayoq" else 1.62
+				if hujum_progressi < 0.30:
+					var t := smoothstep(0.0, 0.30, hujum_progressi)
+					qol_maqsadi = lerpf(0.0, orqaga_burchak, t)
+					qol_y = lerpf(0.0, -0.34, t)
+					qol_z = lerpf(0.0, -0.24, t)
+				elif hujum_progressi < 0.58:
+					var t := smoothstep(0.30, 0.58, hujum_progressi)
+					qol_maqsadi = lerpf(orqaga_burchak, oldinga_burchak, t)
+					qol_y = lerpf(-0.34, 0.12, t)
+					qol_z = lerpf(-0.24, -0.08, t)
+				else:
+					var t := smoothstep(0.58, 1.0, hujum_progressi)
+					qol_maqsadi = lerpf(oldinga_burchak, 0.0, t)
+					qol_y = lerpf(0.12, 0.0, t)
+					qol_z = lerpf(-0.08, 0.0, t)
+			else:
+				qol_maqsadi = 0.82 * sin(PI * hujum_progressi)
+				qol_y = 0.16 * sin(PI * hujum_progressi)
+				qol_z = 0.20 * sin(PI * hujum_progressi)
+		qol_pivotlari[i].rotation.x = lerp_angle(qol_pivotlari[i].rotation.x, qol_maqsadi, delta * 22.0)
+		qol_pivotlari[i].rotation.y = lerp_angle(qol_pivotlari[i].rotation.y, qol_y, delta * 22.0)
+		qol_pivotlari[i].rotation.z = lerp_angle(qol_pivotlari[i].rotation.z, qol_z, delta * 22.0)
 	gavda_root.position.y = (abs(sin(harakat_vaqti * 2.0)) * 0.045 * kuch) if yurmoqda else lerpf(gavda_root.position.y, 0.0, delta * 8.0)
 	gavda_root.rotation.z = lerp_angle(gavda_root.rotation.z, sin(harakat_vaqti) * 0.025 * kuch, delta * 10.0)
+	var gavda_burilishi := sin(PI * hujum_progressi) * 0.30 if hujum_faol else sin(hayot_vaqti * 0.72) * 0.008
+	gavda_root.rotation.y = lerp_angle(gavda_root.rotation.y, gavda_burilishi, delta * 16.0)
 
 func _transport_qidir() -> void:
 	var eng_yaqin: Node3D
@@ -236,16 +284,33 @@ func _hujum() -> void:
 		return
 	var sozlama: Dictionary = QUROLLAR[faol_qurol]
 	hujum_sovush_vaqti = float(sozlama.sovush)
-	hujum_animatsiyasi = 0.30
+	hujum_davomiyligi = clampf(float(sozlama.sovush) * 0.82, 0.42, 0.66)
+	hujum_animatsiyasi = hujum_davomiyligi
+	hujum_zarba_bajarildi = false
+	joriy_hujum_sozlamasi = sozlama.duplicate()
+
+func _hujum_zarbasini_ber() -> void:
+	if joriy_hujum_sozlamasi.is_empty():
+		return
+	var sozlama := joriy_hujum_sozlamasi
 	var bosh := global_position + Vector3.UP * 1.32
 	var old := -global_transform.basis.z
 	var sorov := PhysicsRayQueryParameters3D.create(bosh, bosh + old * float(sozlama.masofa))
 	sorov.collision_mask = 4 | 8
 	sorov.exclude = [get_rid()]
 	var natija := get_world_3d().direct_space_state.intersect_ray(sorov)
-	if natija.is_empty():
-		return
-	var nishon = natija.get("collider")
+	var nishon = natija.get("collider") if not natija.is_empty() else null
+	if not is_instance_valid(nishon):
+		var shakl := SphereShape3D.new()
+		shakl.radius = 0.44
+		var yaqin_sorov := PhysicsShapeQueryParameters3D.new()
+		yaqin_sorov.shape = shakl
+		yaqin_sorov.transform = Transform3D(Basis.IDENTITY, bosh + old * minf(float(sozlama.masofa) * 0.72, 1.55))
+		yaqin_sorov.collision_mask = 4 | 8
+		yaqin_sorov.exclude = [get_rid()]
+		var yaqinlar := get_world_3d().direct_space_state.intersect_shape(yaqin_sorov, 6)
+		if not yaqinlar.is_empty():
+			nishon = yaqinlar[0].get("collider")
 	if is_instance_valid(nishon) and nishon.has_method("zarar_ol"):
 		var miqdor := int(sozlama.zarar)
 		nishon.zarar_ol(miqdor, self)

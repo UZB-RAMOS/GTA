@@ -25,23 +25,30 @@ var maksimal_mustahkamlik := 160
 var mustahkamlik := 160
 var zarba_sovush_vaqti := 0.0
 var vayron := false
+var tiklash_timeri: Timer
 
 func _ready() -> void:
 	add_to_group("transport")
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4 | 8
 	_yarat_kuzov()
+	tiklash_timeri = Timer.new()
+	tiklash_timeri.name = "AvtomatikTamir"
+	tiklash_timeri.one_shot = true
+	tiklash_timeri.wait_time = 4.5
+	tiklash_timeri.timeout.connect(tiklash)
+	add_child(tiklash_timeri)
 
 func _yarat_kuzov() -> void:
 	var collider := CollisionShape3D.new()
 	var shakl := BoxShape3D.new()
-	shakl.size = Vector3(1.92, 1.55, 4.05)
+	shakl.size = Vector3(1.92, 1.28, 4.12)
 	collider.shape = shakl
-	collider.position.y = 0.94
+	collider.position.y = 0.74
 	add_child(collider)
 
 	kuzov_root = Node3D.new()
-	kuzov_root.name = "BatafsilMikroavtobus"
+	kuzov_root.name = "JMJShaharSedani"
 	add_child(kuzov_root)
 	var kuzov := _material(kuzov_rangi, 0.48, 0.68)
 	var quyuq_kuzov := _material(kuzov_rangi.darkened(0.16), 0.55, 0.62)
@@ -49,62 +56,72 @@ func _yarat_kuzov() -> void:
 	var metall := _material(Color("aab2b7"), 0.28, 0.82)
 	var oyna := _oyna_material()
 
-	_quti(kuzov_root, "Shassi", Vector3(0, 0.55, 0.12), Vector3(1.93, 0.55, 3.95), quyuq_kuzov)
-	_quti(kuzov_root, "AsosiyKuzov", Vector3(0, 1.04, 0.38), Vector3(1.88, 0.75, 3.18), kuzov)
-	_quti(kuzov_root, "OldKaput", Vector3(0, 1.02, -1.58), Vector3(1.84, 0.48, 0.92), kuzov)
-	_quti(kuzov_root, "Kabina", Vector3(0, 1.61, 0.28), Vector3(1.76, 0.66, 2.32), kuzov)
-	_quti(kuzov_root, "Tom", Vector3(0, 1.99, 0.30), Vector3(1.82, 0.16, 2.65), quyuq_kuzov)
-	_quti(kuzov_root, "OldBamper", Vector3(0, 0.48, -2.02), Vector3(2.02, 0.22, 0.18), qora)
-	_quti(kuzov_root, "OrqaBamper", Vector3(0, 0.48, 2.08), Vector3(2.02, 0.22, 0.18), qora)
-	_quti(kuzov_root, "RadiatorPanjara", Vector3(0, 0.94, -2.055), Vector3(1.18, 0.36, 0.05), qora)
-	for x in [-0.43, -0.22, 0.0, 0.22, 0.43]:
-		_quti(kuzov_root, "Panjara", Vector3(x, 0.94, -2.087), Vector3(0.055, 0.31, 0.025), metall)
+	_quti(kuzov_root, "Shassi", Vector3(0, 0.43, 0.08), Vector3(1.93, 0.38, 4.02), quyuq_kuzov)
+	_quti(kuzov_root, "AsosiyKuzov", Vector3(0, 0.76, 0.24), Vector3(1.88, 0.62, 3.52), kuzov)
+	_quti(kuzov_root, "OldKaput", Vector3(0, 0.94, -1.58), Vector3(1.84, 0.32, 0.96), kuzov)
+	_quti(kuzov_root, "OrqaBagaj", Vector3(0, 0.91, 1.66), Vector3(1.82, 0.28, 0.64), kuzov)
+	_quti(kuzov_root, "Kabina", Vector3(0, 1.29, 0.23), Vector3(1.72, 0.60, 2.08), kuzov)
+	_quti(kuzov_root, "Tom", Vector3(0, 1.63, 0.29), Vector3(1.67, 0.11, 1.82), quyuq_kuzov)
+	_quti(kuzov_root, "OldBamper", Vector3(0, 0.38, -2.02), Vector3(2.02, 0.19, 0.18), qora)
+	_quti(kuzov_root, "OrqaBamper", Vector3(0, 0.38, 2.08), Vector3(2.02, 0.19, 0.18), qora)
+	_quti(kuzov_root, "YuqoriPanjara", Vector3(0, 0.92, -2.057), Vector3(1.24, 0.13, 0.05), qora)
+	_quti(kuzov_root, "PastkiPanjara", Vector3(0, 0.72, -2.060), Vector3(1.48, 0.17, 0.05), qora)
+	_quti(kuzov_root, "PanjaraAjratgich", Vector3(0, 0.825, -2.090), Vector3(1.54, 0.045, 0.025), metall)
+	for x in [-0.50, -0.25, 0.0, 0.25, 0.50]:
+		_quti(kuzov_root, "PanjaraChizigi", Vector3(x, 0.72, -2.090), Vector3(0.035, 0.14, 0.025), metall)
+	var oltin := _material(Color("c79b37"), 0.30, 0.72)
+	_quti(kuzov_root, "MarkaziyBelgi", Vector3(0, 0.92, -2.095), Vector3(0.25, 0.060, 0.025), oltin)
+	_quti(kuzov_root, "MarkaziyBelgiTik", Vector3(0, 0.92, -2.098), Vector3(0.070, 0.13, 0.026), oltin)
 
 	# Old va orqa oynalar, yon oynalar.
-	_quti(kuzov_root, "OldOyna", Vector3(0, 1.68, -0.915), Vector3(1.54, 0.54, 0.055), oyna)
-	_quti(kuzov_root, "OrqaOyna", Vector3(0, 1.64, 1.485), Vector3(1.50, 0.52, 0.055), oyna)
-	for x in [-0.905, 0.905]:
-		for z in [-0.47, 0.30, 1.02]:
-			_quti(kuzov_root, "YonOyna", Vector3(x, 1.67, z), Vector3(0.055, 0.48, 0.58), oyna)
-		_quti(kuzov_root, "YonChiziq", Vector3(x * 1.012, 1.14, 0.45), Vector3(0.045, 0.06, 2.65), metall)
+	_quti(kuzov_root, "OldOyna", Vector3(0, 1.34, -0.82), Vector3(1.50, 0.45, 0.055), oyna)
+	_quti(kuzov_root, "OrqaOyna", Vector3(0, 1.32, 1.28), Vector3(1.47, 0.43, 0.055), oyna)
+	for x in [-0.875, 0.875]:
+		for z in [-0.40, 0.42]:
+			_quti(kuzov_root, "YonOyna", Vector3(x, 1.35, z), Vector3(0.055, 0.42, 0.68), oyna)
+		_quti(kuzov_root, "YonChiziq", Vector3(x * 1.035, 0.96, 0.36), Vector3(0.045, 0.055, 2.82), metall)
 
 	# Fara, stop chirog‘i, raqam va kuzov choklari.
 	for x in [-0.62, 0.62]:
-		_quti(kuzov_root, "OldFara", Vector3(x, 0.98, -2.075), Vector3(0.42, 0.27, 0.06), _emissive(Color("fff2bd"), 2.2))
-		_quti(kuzov_root, "OrqaChiroq", Vector3(x, 0.91, 2.075), Vector3(0.31, 0.42, 0.055), _emissive(Color("d52e2e"), 1.5))
-	_quti(kuzov_root, "OldRaqam", Vector3(0, 0.62, -2.115), Vector3(0.62, 0.19, 0.035), _material(Color("f5f4ed"), 0.54))
-	_quti(kuzov_root, "OrqaRaqam", Vector3(0, 0.66, 2.115), Vector3(0.62, 0.19, 0.035), _material(Color("f5f4ed"), 0.54))
+		_quti(kuzov_root, "OldFara", Vector3(x, 1.00, -2.075), Vector3(0.48, 0.16, 0.06), _emissive(Color("fff2bd"), 3.0))
+		_quti(kuzov_root, "TumanFarasi", Vector3(x, 0.58, -2.080), Vector3(0.22, 0.12, 0.06), _emissive(Color("ffd99a"), 2.0))
+		_quti(kuzov_root, "OrqaChiroq", Vector3(x, 0.84, 2.075), Vector3(0.35, 0.25, 0.055), _emissive(Color("d52e2e"), 1.5))
+	_farani_yarat(kuzov_root)
+	_quti(kuzov_root, "OldRaqam", Vector3(0, 0.50, -2.115), Vector3(0.62, 0.19, 0.035), _material(Color("f5f4ed"), 0.54))
+	_quti(kuzov_root, "OrqaRaqam", Vector3(0, 0.60, 2.115), Vector3(0.62, 0.19, 0.035), _material(Color("f5f4ed"), 0.54))
 	for x in [-1.08, 1.08]:
-		_quti(kuzov_root, "KozguTayanchi", Vector3(x, 1.52, -0.78), Vector3(0.24, 0.07, 0.07), qora)
-		_quti(kuzov_root, "Kozgu", Vector3(x * 1.035, 1.54, -0.78), Vector3(0.13, 0.27, 0.30), quyuq_kuzov)
+		_quti(kuzov_root, "KozguTayanchi", Vector3(x, 1.29, -0.68), Vector3(0.24, 0.07, 0.07), qora)
+		_quti(kuzov_root, "Kozgu", Vector3(x * 1.035, 1.31, -0.68), Vector3(0.13, 0.22, 0.28), quyuq_kuzov)
+	for x in [-0.96, 0.96]:
+		_quti(kuzov_root, "YonRelief", Vector3(x, 0.90, 0.20), Vector3(0.035, 0.055, 2.95), metall)
 
 	# Chap old eshik alohida pivotda ochiladi.
 	eshik_pivot = Node3D.new()
 	eshik_pivot.name = "HaydovchiEshigi"
-	eshik_pivot.position = Vector3(-0.955, 1.18, -0.68)
+	eshik_pivot.position = Vector3(-0.955, 0.98, -0.62)
 	kuzov_root.add_child(eshik_pivot)
-	_quti(eshik_pivot, "EshikPaneli", Vector3(-0.015, 0, 0.31), Vector3(0.07, 0.80, 0.72), kuzov)
+	_quti(eshik_pivot, "EshikPaneli", Vector3(-0.015, 0, 0.31), Vector3(0.07, 0.68, 0.72), kuzov)
 	_quti(eshik_pivot, "Tutqich", Vector3(-0.075, 0.16, 0.48), Vector3(0.06, 0.06, 0.18), metall)
 
 	# To‘rt g‘ildirak: shina, disk va old g‘ildirak rul pivoti.
-	for x in [-1.0, 1.0]:
+	for x in [-0.96, 0.96]:
 		for z in [-1.34, 1.35]:
 			var pivot := Node3D.new()
-			pivot.position = Vector3(x, 0.48, z)
+			pivot.position = Vector3(x, 0.39, z)
 			kuzov_root.add_child(pivot)
-			var shina := _silindr(pivot, "Shina", Vector3.ZERO, 0.39, 0.29, qora)
+			var shina := _silindr(pivot, "Shina", Vector3.ZERO, 0.35, 0.29, qora)
 			shina.rotation.z = PI / 2.0
-			var disk := _silindr(pivot, "Disk", Vector3(x * 0.025, 0, 0), 0.20, 0.31, metall)
+			var disk := _silindr(pivot, "Disk", Vector3(x * 0.025, 0, 0), 0.18, 0.31, metall)
 			disk.rotation.z = PI / 2.0
 			barcha_gildiraklar.append(shina)
 			if z < 0.0:
 				old_gildirak_pivotlari.append(pivot)
 
 	# Ichki salon, o‘rindiqlar, rul va ko‘rinadigan haydovchi.
-	_quti(kuzov_root, "Panel", Vector3(0, 1.25, -0.83), Vector3(1.55, 0.18, 0.30), qora)
-	_quti(kuzov_root, "ChapOrindiq", Vector3(-0.46, 1.03, -0.25), Vector3(0.55, 0.36, 0.65), _material(Color("34383b")))
-	_quti(kuzov_root, "OngOrindiq", Vector3(0.46, 1.03, -0.25), Vector3(0.55, 0.36, 0.65), _material(Color("34383b")))
-	var rul := _torus(kuzov_root, "Rul", Vector3(-0.47, 1.43, -0.69), 0.22, 0.035, qora)
+	_quti(kuzov_root, "Panel", Vector3(0, 1.07, -0.72), Vector3(1.55, 0.16, 0.30), qora)
+	_quti(kuzov_root, "ChapOrindiq", Vector3(-0.46, 0.83, -0.18), Vector3(0.55, 0.34, 0.62), _material(Color("34383b")))
+	_quti(kuzov_root, "OngOrindiq", Vector3(0.46, 0.83, -0.18), Vector3(0.55, 0.34, 0.62), _material(Color("34383b")))
+	var rul := _torus(kuzov_root, "Rul", Vector3(-0.47, 1.19, -0.61), 0.20, 0.032, qora)
 	rul.rotation.x = deg_to_rad(68.0)
 	haydovchi_modeli = _haydovchi_yarat()
 	haydovchi_modeli.visible = false
@@ -113,7 +130,7 @@ func _yarat_kuzov() -> void:
 func _haydovchi_yarat() -> Node3D:
 	var root := Node3D.new()
 	root.name = "KorinadiganHaydovchi"
-	root.position = Vector3(-0.46, 0.92, -0.25)
+	root.position = Vector3(-0.46, 0.70, -0.18)
 	var teri := _material(Color("c88d66"), 0.9)
 	var kiyim := _material(Color("2b73bd"), 0.82)
 	_quti(root, "Gavda", Vector3(0, 0.43, 0.05), Vector3(0.48, 0.62, 0.30), kiyim)
@@ -125,6 +142,11 @@ func _haydovchi_yarat() -> Node3D:
 
 func _physics_process(delta: float) -> void:
 	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
+	if global_position.y < -2.0:
+		global_position.y = 0.4
+		rotation.x = 0.0
+		rotation.z = 0.0
+		tiklash()
 	if not is_on_floor():
 		velocity.y -= gravitatsiya * delta
 	else:
@@ -157,7 +179,7 @@ func _physics_process(delta: float) -> void:
 	for pivot in old_gildirak_pivotlari:
 		pivot.rotation.y = rul_burchagi
 	for gildirak in barcha_gildiraklar:
-		gildirak.rotate_x(joriy_tezlik * delta / 0.39)
+		gildirak.rotate_x(joriy_tezlik * delta / 0.35)
 	kuzov_root.rotation.z = lerpf(kuzov_root.rotation.z, -rul * abs(joriy_tezlik) / maksimal_tezlik * 0.045, delta * 4.5)
 	kuzov_root.rotation.x = lerpf(kuzov_root.rotation.x, -gaz * 0.018, delta * 4.0)
 
@@ -203,18 +225,22 @@ func _vayron_bolish() -> void:
 	joriy_tezlik = 0.0
 	var ogohlantirish := Label3D.new()
 	ogohlantirish.name = "NosozYozuvi"
-	ogohlantirish.text = "NOSOZ"
+	ogohlantirish.text = "AVTO TA’MIRLANMOQDA"
 	ogohlantirish.font_size = 30
 	ogohlantirish.outline_size = 6
 	ogohlantirish.modulate = Color("ff5d4c")
-	ogohlantirish.position = Vector3(0, 2.7, 0)
+	ogohlantirish.position = Vector3(0, 2.15, 0)
 	ogohlantirish.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	add_child(ogohlantirish)
 	vayron_boldi.emit()
+	if is_instance_valid(tiklash_timeri):
+		tiklash_timeri.start()
 	if boshqarilmoqda:
 		chiqish()
 
 func tiklash() -> void:
+	if is_instance_valid(tiklash_timeri):
+		tiklash_timeri.stop()
 	vayron = false
 	mustahkamlik = maksimal_mustahkamlik
 	joriy_tezlik = 0.0
@@ -276,6 +302,19 @@ func _emissive(rang: Color, kuch: float) -> StandardMaterial3D:
 	mat.emission = rang
 	mat.emission_energy_multiplier = kuch
 	return mat
+
+func _farani_yarat(parent: Node3D) -> void:
+	var fara := SpotLight3D.new()
+	fara.name = "OldYoritgich"
+	fara.position = Vector3(0, 0.88, -2.08)
+	fara.light_color = Color("fff0c5")
+	fara.light_energy = 4.2
+	fara.spot_range = 28.0
+	fara.spot_angle = 33.0
+	fara.spot_attenuation = 1.05
+	fara.shadow_enabled = false
+	fara.add_to_group("avtomobil_farasi")
+	parent.add_child(fara)
 
 func _quti(parent: Node3D, nom: String, p: Vector3, hajm: Vector3, mat: Material) -> MeshInstance3D:
 	var n := MeshInstance3D.new()

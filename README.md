@@ -4,6 +4,8 @@
 
 ![O‘yin jarayoni](screenshots/preview.png)
 
+![Tungi original JMJ shahar sedani](screenshots/preview_vehicle.png)
+
 ![Asosiy menyu](screenshots/preview_menu.png)
 
 ![Do‘kon va xarid oynasi](screenshots/preview_store.png)
@@ -43,10 +45,13 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - kirish menyusining pastki qismida `by JMJ gems` brend yozuvi;
 - 210 × 210 o‘lchamli, 9 ta 70 × 70 mantiqiy chunkka bo‘lingan procedural original shahar;
 - 5 × 5 chorraha tarmog‘i, uzun yo‘llar, batafsil fasadlar, piyodalar yo‘laklari, bozor, bekatlar, skameykalar, ko‘cha chiroqlari va daraxtlar;
-- bo‘g‘inli original 3D personaj: yurish, yugurish, sakrash, o‘tirish va procedural tana animatsiyasi;
-- salon, eshik, chiroq, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan mikroavtobus;
+- doimiy tungi muhit, yoniq bino derazalari, 40 ta real yoritadigan ko‘cha fonari va 17 ta avtomobil farasi;
+- yuz, quloq, ko‘z, qosh, burun, kiyim detallari, nafas va bosh harakatlariga ega bo‘g‘inli original 3D personajlar;
+- tayyorlanish, zarba va tiklanish bosqichlariga ega gavda bilan bajariladigan yaxshilangan urish animatsiyasi;
+- salon, eshik, ikki qavatli panjara, tor faralar, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan original JMJ shahar sedani;
+- Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
 - transportga kirish/chiqish animatsiyasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
-- svetoforda va oldidagi transportga qarab to‘xtaydigan 16 ta batafsil trafik avtomobili;
+- svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan va zarardan keyin avtomatik tiklanadigan 16 ta batafsil trafik avtomobili;
 - turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC;
 - 100 ta ishlaydigan svetofor va xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
 - tezlikka bog‘liq urilish zarari, avtomobil mustahkamligi, o‘yinchi joni va himoya zirhi;
@@ -70,6 +75,6 @@ Standalone `.exe` hajmi GitHub’ning oddiy fayl chegarasidan katta. Shu sabab u
 
 ## Chegara
 
-Bu tijoriy AAA yoki fotorealistik mahsulot emas, balki batafsillashtirilgan, yakunlangan va o‘ynaladigan vertical-slice prototip. Modellar tashqi tayyor aktivlarsiz Godot ichida original procedural geometriya sifatida qurilgan. Mobil versiya foydalanuvchi qaroriga ko‘ra loyiha doirasidan chiqarilgan. Multiplayer, qurol, jinoyat/qidiruv tizimi va to‘liq Toshkent xaritasi bu versiyaga kirmaydi.
+Bu tijoriy AAA yoki fotorealistik mahsulot emas, balki batafsillashtirilgan, yakunlangan va o‘ynaladigan vertical-slice prototip. Modellar tashqi tayyor aktivlarsiz Godot ichida original procedural geometriya sifatida qurilgan. Mobil versiya foydalanuvchi qaroriga ko‘ra loyiha doirasidan chiqarilgan. Multiplayer, o‘qotar qurol, jinoyat/qidiruv tizimi va to‘liq Toshkent xaritasi bu versiyaga kirmaydi.
 
 Brend, pullik shrift va mualliflik huquqi bilan himoyalangan kontentni ruxsatsiz qo‘shmang. Keyingi barcha 3D model, musiqa va teksturalarning litsenziya dalilini saqlash tavsiya etiladi.

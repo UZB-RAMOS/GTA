@@ -10,9 +10,11 @@ var maqsad := Vector3.ZERO
 var tezlik := 1.65
 var rng := RandomNumberGenerator.new()
 var model_root: Node3D
+var bosh_pivot: Node3D
 var oyoqlar: Array[Node3D] = []
 var qollar: Array[Node3D] = []
 var qadam_vaqti := 0.0
+var hayot_vaqti := 0.0
 var kutish_vaqti := 0.0
 var jon := 75
 var olgan := false
@@ -43,7 +45,7 @@ func _yarat_model() -> void:
 	model_root.scale = Vector3.ONE * boy
 	add_child(model_root)
 	var terilar := [Color("e1ae83"), Color("c98c63"), Color("9f684c"), Color("e8bc98")]
-	var shimlar := [Color("26364a"), Color("34383b"), Color("5d493b"), Color("21324e")]
+	var shimlar := [Color("172638"), Color("24282c"), Color("403127"), Color("15243a")]
 	var sochlar := [Color("201916"), Color("422b21"), Color("17191b"), Color("6b4932")]
 	var teri := _material(terilar[rng.randi_range(0, terilar.size() - 1)], 0.9)
 	var kiyim := _material(rang, 0.86)
@@ -53,12 +55,28 @@ func _yarat_model() -> void:
 
 	_quti(model_root, "Bel", Vector3(0, 0.82, 0), Vector3(0.43, 0.27, 0.29), shim)
 	_quti(model_root, "Gavda", Vector3(0, 1.17, 0), Vector3(0.58, 0.58, 0.34), kiyim)
+	_quti(model_root, "Yoqasi", Vector3(0, 1.46, -0.176), Vector3(0.24, 0.08, 0.022), _material(Color("c8c5b9"), 0.8))
+	for y in [1.31, 1.17, 1.03]:
+		_sfera(model_root, "Tugma", Vector3(0, y, -0.178), Vector3(0.026, 0.026, 0.014), _material(Color("1a2024"), 0.5))
 	_kapsula(model_root, "Boyin", Vector3(0, 1.52, 0), 0.085, 0.22, teri)
-	_sfera(model_root, "Bosh", Vector3(0, 1.73, -0.01), Vector3(0.47, 0.55, 0.46), teri)
-	_sfera(model_root, "Soch", Vector3(0, 1.90, 0.01), Vector3(0.49, 0.24, 0.47), soch)
+	bosh_pivot = Node3D.new()
+	bosh_pivot.name = "BoshHarakati"
+	bosh_pivot.position = Vector3(0, 1.73, -0.01)
+	model_root.add_child(bosh_pivot)
+	_sfera(bosh_pivot, "Bosh", Vector3.ZERO, Vector3(0.47, 0.55, 0.46), teri)
+	_sfera(bosh_pivot, "Soch", Vector3(0, 0.17, 0.02), Vector3(0.49, 0.24, 0.47), soch)
+	var oq := _material(Color("e7e4da"), 0.55)
+	var koz_mat := _material(Color("171d20"), 0.38)
 	for x in [-0.085, 0.085]:
-		_sfera(model_root, "Koz", Vector3(x, 1.76, -0.235), Vector3(0.035, 0.032, 0.02), _material(Color("1d252a"), 0.4))
-	_quti(model_root, "Ogiz", Vector3(0, 1.63, -0.237), Vector3(0.10, 0.018, 0.015), _material(Color("79433d")))
+		_sfera(bosh_pivot, "KozOqi", Vector3(x, 0.03, -0.235), Vector3(0.060, 0.042, 0.022), oq)
+		_sfera(bosh_pivot, "Qorachiq", Vector3(x, 0.03, -0.252), Vector3(0.022, 0.025, 0.012), koz_mat)
+		var qosh := _quti(bosh_pivot, "Qosh", Vector3(x, 0.10, -0.247), Vector3(0.09, 0.018, 0.012), soch)
+		qosh.rotation.z = deg_to_rad(5.0 * sign(x))
+	for x in [-0.238, 0.238]:
+		_sfera(bosh_pivot, "Quloq", Vector3(x, 0.0, 0), Vector3(0.060, 0.115, 0.045), teri)
+	var burun := _kapsula(bosh_pivot, "Burun", Vector3(0, -0.02, -0.248), 0.026, 0.105, teri)
+	burun.rotation.x = deg_to_rad(72.0)
+	_quti(bosh_pivot, "Ogiz", Vector3(0, -0.10, -0.237), Vector3(0.10, 0.018, 0.015), _material(Color("79433d")))
 
 	for tomon in [-1.0, 1.0]:
 		var qol := Node3D.new()
@@ -101,14 +119,20 @@ func _physics_process(delta: float) -> void:
 	_animatsiya(delta, true)
 
 func _animatsiya(delta: float, yurmoqda: bool) -> void:
+	hayot_vaqti += delta
 	if yurmoqda:
 		qadam_vaqti += delta * (6.0 + tezlik)
 	var qadam := sin(qadam_vaqti) * 0.55 if yurmoqda else 0.0
 	for i in range(oyoqqlar_soni()):
 		var belgi := -1.0 if i == 0 else 1.0
 		oyoqlar[i].rotation.x = lerp_angle(oyoqlar[i].rotation.x, qadam * belgi, delta * 10.0)
-		qollar[i].rotation.x = lerp_angle(qollar[i].rotation.x, -qadam * belgi * 0.7, delta * 10.0)
+		var dam_olish := sin(hayot_vaqti * 1.35 + float(i)) * 0.035
+		qollar[i].rotation.x = lerp_angle(qollar[i].rotation.x, -qadam * belgi * 0.7 + dam_olish, delta * 10.0)
 	model_root.position.y = abs(sin(qadam_vaqti * 2.0)) * 0.025 if yurmoqda else lerpf(model_root.position.y, 0.0, delta * 5.0)
+	model_root.rotation.z = lerp_angle(model_root.rotation.z, sin(hayot_vaqti * 0.72) * 0.012, delta * 2.5)
+	if is_instance_valid(bosh_pivot):
+		bosh_pivot.rotation.y = lerp_angle(bosh_pivot.rotation.y, sin(hayot_vaqti * 0.48 + float(name.hash() % 11)) * 0.08, delta * 2.0)
+		bosh_pivot.rotation.x = lerp_angle(bosh_pivot.rotation.x, sin(hayot_vaqti * 0.36) * 0.025, delta * 2.0)
 
 func oyoqqlar_soni() -> int:
 	return mini(oyoqlar.size(), qollar.size())

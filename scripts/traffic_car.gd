@@ -2,13 +2,17 @@ extends CharacterBody3D
 
 @export var rang := Color("c54245")
 @export var tezlik := 7.0
+@export var model_turi := 0
 var yol: Array[Vector3] = []
 var indeks := 0
 var joriy_tezlik := 0.0
 var gildiraklar: Array[MeshInstance3D] = []
-var mustahkamlik := 90
+var maksimal_mustahkamlik := 120
+var mustahkamlik := 120
 var zarba_sovush_vaqti := 0.0
 var vayron := false
+var tiklanish_vaqti := 0.0
+var qotish_vaqti := 0.0
 
 func _ready() -> void:
 	add_to_group("trafik")
@@ -23,12 +27,13 @@ func _yarat_model() -> void:
 	collider.shape = shakl
 	collider.position.y = 0.72
 	add_child(collider)
-	var kuzov := _material(rang, 0.50, 0.55)
+	var kuzov := _material(rang, 0.46, 0.58)
+	var quyuq_kuzov := _material(rang.darkened(0.20), 0.52, 0.58)
 	var qora := _material(Color("111519"), 0.75)
 	var metall := _material(Color("aab0b4"), 0.25, 0.82)
 	var oyna := _oyna_material()
 
-	_quti("Shassi", Vector3(0, 0.50, 0), Vector3(1.72, 0.48, 3.38), kuzov)
+	_quti("Shassi", Vector3(0, 0.50, 0), Vector3(1.72, 0.48, 3.38), quyuq_kuzov)
 	_quti("Kaput", Vector3(0, 0.83, -1.22), Vector3(1.67, 0.28, 0.95), kuzov)
 	_quti("Bagaj", Vector3(0, 0.84, 1.28), Vector3(1.67, 0.30, 0.72), kuzov)
 	_quti("Kabina", Vector3(0, 1.18, 0.08), Vector3(1.49, 0.70, 1.55), kuzov)
@@ -37,12 +42,24 @@ func _yarat_model() -> void:
 	for x in [-0.765, 0.765]:
 		_quti("YonOyna", Vector3(x, 1.29, 0.08), Vector3(0.045, 0.44, 1.18), oyna)
 		_quti("Kozgu", Vector3(x * 1.11, 1.23, -0.67), Vector3(0.20, 0.16, 0.24), kuzov)
+	# Ikki qavatli panjara va tor faralar — O‘zbekiston ko‘chalaridagi zamonaviy
+	# sedanlardan ilhomlangan, lekin mustaqil yaratilgan original kuzov.
+	_quti("YuqoriPanjara", Vector3(0, 0.82, -1.735), Vector3(1.06, 0.12, 0.045), qora)
+	_quti("PastkiPanjara", Vector3(0, 0.64, -1.738), Vector3(1.34, 0.16, 0.045), qora)
+	_quti("PanjaraXromi", Vector3(0, 0.735, -1.766), Vector3(1.40, 0.035, 0.022), metall)
+	var oltin := _material(Color("c39a3b"), 0.30, 0.70)
+	_quti("MarkaziyBelgi", Vector3(0, 0.82, -1.770), Vector3(0.20, 0.050, 0.025), oltin)
+	_quti("MarkaziyBelgiTik", Vector3(0, 0.82, -1.772), Vector3(0.060, 0.105, 0.025), oltin)
 	for x in [-0.55, 0.55]:
-		_quti("Fara", Vector3(x, 0.78, -1.72), Vector3(0.35, 0.20, 0.05), _emissive(Color("fff1ba"), 1.8))
+		_quti("Fara", Vector3(x, 0.91, -1.72), Vector3(0.40, 0.14, 0.05), _emissive(Color("fff1ba"), 2.8))
+		_quti("TumanFarasi", Vector3(x, 0.55, -1.73), Vector3(0.17, 0.10, 0.05), _emissive(Color("ffd79a"), 1.7))
 		_quti("Stop", Vector3(x, 0.79, 1.72), Vector3(0.34, 0.21, 0.05), _emissive(Color("cf3030"), 1.2))
+	_farani_yarat()
 	_quti("OldBamper", Vector3(0, 0.42, -1.75), Vector3(1.82, 0.18, 0.13), qora)
 	_quti("OrqaBamper", Vector3(0, 0.42, 1.75), Vector3(1.82, 0.18, 0.13), qora)
 	_quti("Raqam", Vector3(0, 0.60, -1.79), Vector3(0.54, 0.16, 0.025), _material(Color("f5f3e9")))
+	for x in [-0.875, 0.875]:
+		_quti("YonRelief", Vector3(x, 0.72, 0.05), Vector3(0.025, 0.045, 2.70), metall)
 	for x in [-0.88, 0.88]:
 		for z in [-1.13, 1.12]:
 			var shina := _silindr(Vector3(x, 0.45, z), 0.34, 0.25, qora)
@@ -59,6 +76,12 @@ func _physics_process(delta: float) -> void:
 	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
 	if yol.is_empty():
 		return
+	if vayron:
+		tiklanish_vaqti -= delta
+		velocity = Vector3.ZERO
+		if tiklanish_vaqti <= 0.0:
+			_avtomatik_tiklash()
+		return
 	var maqsad := yol[indeks]
 	var farq := maqsad - global_position
 	farq.y = 0.0
@@ -68,12 +91,19 @@ func _physics_process(delta: float) -> void:
 	var yonalish := farq.normalized()
 	var kerak_burilish := atan2(-yonalish.x, -yonalish.z)
 	rotation.y = lerp_angle(rotation.y, kerak_burilish, delta * 2.3)
-	var maqsad_tezlik := 0.0 if vayron or _qizil_chiroq_yaqin() or _oldinda_mashina() else tezlik
+	var maqsad_tezlik := 0.0 if _qizil_chiroq_yaqin() or _oldinda_mashina() else tezlik
 	joriy_tezlik = move_toward(joriy_tezlik, maqsad_tezlik, (10.0 if maqsad_tezlik == 0.0 else 3.0) * delta)
 	velocity = -global_transform.basis.z * joriy_tezlik
 	velocity.y = -0.5
 	var zarba_tezligi: float = absf(joriy_tezlik)
+	var oldingi_joy := global_position
 	move_and_slide()
+	if maqsad_tezlik > 0.0 and joriy_tezlik > 2.0 and global_position.distance_to(oldingi_joy) < 0.008:
+		qotish_vaqti += delta
+	else:
+		qotish_vaqti = maxf(0.0, qotish_vaqti - delta * 2.0)
+	if qotish_vaqti > 3.0:
+		_yolga_qaytar()
 	_urilishni_tekshir(zarba_tezligi)
 	for gildirak in gildiraklar:
 		gildirak.rotate_x(joriy_tezlik * delta / 0.34)
@@ -98,13 +128,36 @@ func zarar_ol(miqdor: int, _manba = null) -> void:
 		vayron = true
 		joriy_tezlik = 0.0
 		var yozuv := Label3D.new()
-		yozuv.text = "NOSOZ"
+		yozuv.name = "TiklanishYozuvi"
+		yozuv.text = "TIKLANMOQDA"
 		yozuv.font_size = 24
 		yozuv.outline_size = 5
 		yozuv.modulate = Color("ff5c4d")
 		yozuv.position = Vector3(0, 2.15, 0)
 		yozuv.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		add_child(yozuv)
+		tiklanish_vaqti = 3.5
+
+func _avtomatik_tiklash() -> void:
+	vayron = false
+	mustahkamlik = maksimal_mustahkamlik
+	joriy_tezlik = 0.0
+	qotish_vaqti = 0.0
+	var yozuv := get_node_or_null("TiklanishYozuvi")
+	if is_instance_valid(yozuv):
+		yozuv.queue_free()
+	_yolga_qaytar()
+
+func _yolga_qaytar() -> void:
+	if yol.is_empty():
+		return
+	global_position = yol[indeks] + Vector3.UP * 0.22
+	var keyingi := yol[(indeks + 1) % yol.size()]
+	var yonalish := (keyingi - global_position).normalized()
+	rotation.y = atan2(-yonalish.x, -yonalish.z)
+	indeks = (indeks + 1) % yol.size()
+	joriy_tezlik = 0.0
+	qotish_vaqti = 0.0
 
 func _qizil_chiroq_yaqin() -> bool:
 	var vertikal: bool = abs(global_transform.basis.z.z) > abs(global_transform.basis.z.x)
@@ -117,11 +170,13 @@ func _qizil_chiroq_yaqin() -> bool:
 	return false
 
 func _oldinda_mashina() -> bool:
-	for boshqa in get_tree().get_nodes_in_group("trafik"):
+	var avtomobillar := get_tree().get_nodes_in_group("trafik")
+	avtomobillar.append_array(get_tree().get_nodes_in_group("transport"))
+	for boshqa in avtomobillar:
 		if boshqa == self:
 			continue
 		var lokal := to_local(boshqa.global_position)
-		if lokal.z < -0.2 and lokal.z > -4.6 and abs(lokal.x) < 1.25:
+		if lokal.z < -0.2 and lokal.z > -5.8 and abs(lokal.x) < 1.30:
 			return true
 	return false
 
@@ -143,6 +198,19 @@ func _emissive(r: Color, kuch: float) -> StandardMaterial3D:
 	mat.emission = r
 	mat.emission_energy_multiplier = kuch
 	return mat
+
+func _farani_yarat() -> void:
+	var fara := SpotLight3D.new()
+	fara.name = "OldYoritgich"
+	fara.position = Vector3(0, 0.84, -1.73)
+	fara.light_color = Color("fff0c5")
+	fara.light_energy = 3.4
+	fara.spot_range = 22.0
+	fara.spot_angle = 34.0
+	fara.spot_attenuation = 1.08
+	fara.shadow_enabled = false
+	fara.add_to_group("avtomobil_farasi")
+	add_child(fara)
 
 func _quti(nom: String, p: Vector3, hajm: Vector3, mat: Material) -> MeshInstance3D:
 	var n := MeshInstance3D.new()
