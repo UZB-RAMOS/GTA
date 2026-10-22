@@ -250,11 +250,12 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 
 | Natija | Holat | Manba |
 |---|---|---|
-| Godot loyihasi | Tayyor, `toshkent_game/` | `[kuzatildi]` mahalliy fayllar |
-| Procedural shahar | Yo‘llar, chiziqlar, trotuar, binolar, bozor, mahalla markazi, daraxtlar | `[strings]` `scripts/main.gd` |
-| Personaj | Yurish, sprint, sakrash, sichqon kamerasi, original low-poly tana | `[strings]` `scripts/player.gd` |
-| Transport | Kirish/chiqish, gaz, tormoz, rul va qo‘l tormozi | `[strings]` `scripts/vehicle.gd` |
-| Trafik va piyodalar | 6 ta trafik avtomobili, 16 ta piyoda NPC | `[kuzatildi]` `SELF_TEST_OK` |
+| Godot loyihasi | Tayyor, repository root papkasida | `[kuzatildi]` mahalliy fayllar |
+| Procedural shahar | Yo‘llar, chiziqlar, trotuar, fasadlar, bozor, bekatlar, ko‘cha jihozlari va daraxtlar | `[strings]` `scripts/main.gd` |
+| Personaj | Yurish, sprint, sakrash, o‘tirish, bo‘g‘inli original 3D tana va procedural animatsiya | `[strings]` `scripts/player.gd` |
+| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi va avtomatik old kamera | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd` |
+| Trafik va piyodalar | 10 ta batafsil trafik avtomobili, 28 ta bo‘g‘inli piyoda NPC | `[kuzatildi]` `SELF_TEST_OK` |
+| Svetofor va chegara | 36 ta davriy svetofor, trafikning qizilda to‘xtashi va 4 ta ko‘rinmas fizik devor | `[strings]` `scripts/traffic_light.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
 | Topshiriq | JSON’dan yuklanadigan 4 bosqich, 25 000 so‘m mukofot | `[strings]` `data/mission_01.json`; `[kuzatildi]` self-test |
 | UI | Asosiy menyu, HUD, minimap, pause va ovoz sozlamasi | `[kuzatildi]` real OpenGL preview |
 | Save/load | `schema_version: 1`, F5/F9 va menyu tugmalari | `[kuzatildi]` self-test |
@@ -264,14 +265,14 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 Self-test muvaffaqiyat mezoni:
 
 ```text
-SELF_TEST_OK: shahar=OK kamera=OK transport=1 trafik=6 piyoda=16 mission=4 hud=OK menyu=OK pauza=OK sozlama=OK save_load=OK
+SELF_TEST_OK: shahar=OK anatomik_model=OK kamera=avto_old transport=1 trafik=10 piyoda=28 svetofor=36 chegara=4 mission=4 hud=OK menyu=OK pauza=OK save_load=OK
 ```
 
-Preview rasmlari `toshkent_game/screenshots/preview.png` va `toshkent_game/screenshots/preview_menu.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
+Preview rasmlari `screenshots/preview.png` va `screenshots/preview_menu.png` ichida saqlandi. Ular maket emas: Godot 4.7.2, OpenGL 3.3 Compatibility va AMD Radeon Graphics orqali real ishga tushirilgan sahnadan olindi — `[kuzatildi]`.
 
 `[kuzatildi]` Yakuniy Windows `.exe` faylini REA bilan qo‘shimcha statik ochish urinishida Ghidra o‘rnatmasining `application.properties` fayli acquisition vaqtida o‘zgargani uchun `stable snapshot` olinmadi. Bu urinish yakuniy build haqida dalil bermadi va REA dalil ID’si yaratilmagan; natija o‘ylab topilmadi. Buildning ishga tushishi Godot self-test va `BUILD_EXIT_CODE=0` bilan alohida tasdiqlandi.
 
-MVP cheklovi: bu o‘ynaladigan vertical slice, butun Toshkentni qamrab olgan tijoriy AAA mahsulot emas. Multiplayer, qurol va qidiruv tizimi bu nashrda `aniqlanmadi` emas, balki ataylab doiradan tashqarida qoldirilgan.
+Prototip cheklovi: bu o‘ynaladigan vertical slice, butun Toshkentni qamrab olgan tijoriy AAA yoki fotorealistik mahsulot emas. Tana, uy va transport shakllari avvalgidan batafsilroq, ammo tashqi fotorealistik 3D assetlarsiz original procedural geometriya sifatida qurilgan. Multiplayer, qurol va qidiruv tizimi bu nashrda `aniqlanmadi` emas, balki ataylab doiradan tashqarida qoldirilgan.
 
 ## Original kontent qoidalari
 

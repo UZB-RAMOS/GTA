@@ -2,12 +2,15 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 
-if not exist "builds\Toshkent_Sarguzashti.exe" (
-    echo Xato: builds\Toshkent_Sarguzashti.exe topilmadi.
+set "OYIN_EXE=%~dp0builds\Toshkent_Sarguzashti.exe"
+if not exist "%OYIN_EXE%" set "OYIN_EXE=%~dp0Toshkent_Sarguzashti.exe"
+
+if not exist "%OYIN_EXE%" (
+    echo Xato: Toshkent_Sarguzashti.exe topilmadi.
     echo Toshkent_Sarguzashti_Windows.zip faylini ochib ko‘ring.
     pause
     exit /b 1
 )
 
-start "Toshkent Sarguzashti" "builds\Toshkent_Sarguzashti.exe"
+start "Toshkent Sarguzashti" "%OYIN_EXE%"
 exit /b 0
