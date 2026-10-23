@@ -1202,7 +1202,7 @@ func _hud_yangila() -> void:
 	if is_instance_valid(oyinchi.joriy_transport):
 		holat = "TRANSPORTDA"
 		speed = oyinchi.joriy_transport.tezlik_kmh()
-		transport_holati = "  •  Mashina: %d/%d" % [oyinchi.joriy_transport.mustahkamlik, oyinchi.joriy_transport.maksimal_mustahkamlik]
+		transport_holati = "  •  Mashina: BUZILMAS" if oyinchi.joriy_transport.buzilmas else "  •  Mashina: %d/%d" % [oyinchi.joriy_transport.mustahkamlik, oyinchi.joriy_transport.maksimal_mustahkamlik]
 	hud_yozuvi.text = "TOSHKENT SARGUZASHTI\nJon: %d/100  •  Zirh: %d/100\nPul: %s so‘m\nQurol: %s  •  %s%s" % [sogliq, zirh, _pul_format(pul), oyinchi.faol_qurol_nomi(), holat, transport_holati]
 	tezlik_yozuvi.text = "%03d km/soat" % speed if holat == "TRANSPORTDA" else ""
 	if topshiriq and not topshiriq.stages.is_empty():
@@ -1410,10 +1410,11 @@ func _self_test() -> void:
 		xatolar.append("Uch bosqichli urish animatsiyasi boshlanmadi")
 	oyinchi.hujum_animatsiyasi = 0.0
 	oyinchi.hujum_sovush_vaqti = 0.0
-	topshiriq_transporti.zarar_ol(10)
-	if topshiriq_transporti.mustahkamlik != 150:
-		xatolar.append("Transport mustahkamligi zarar qabul qilmadi")
-	topshiriq_transporti.tiklash()
+	topshiriq_transporti.zarar_ol(9999)
+	if topshiriq_transporti.mustahkamlik != topshiriq_transporti.maksimal_mustahkamlik or topshiriq_transporti.vayron:
+		xatolar.append("Boshqariladigan transport buzilmas holatda qolmadi")
+	if int(round(topshiriq_transporti.maksimal_tezlik * 3.6)) != 151:
+		xatolar.append("Tezkor transport sozlamasi noto‘g‘ri")
 	if topshiriq_transporti.salon_zarari_hisobla(12) != 0 or topshiriq_transporti.salon_zarari_hisobla(80) > 12:
 		xatolar.append("Salon himoyasi to‘qnashuv zararini to‘g‘ri cheklamadi")
 	var sinov_trafik = get_tree().get_first_node_in_group("trafik")
@@ -1466,7 +1467,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=tezkor+buzilmas trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
 		await get_tree().process_frame
 		get_tree().quit(0)
 	else:

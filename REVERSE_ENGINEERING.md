@@ -253,10 +253,10 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 | Godot loyihasi | Tayyor, repository root papkasida | `[kuzatildi]` mahalliy fayllar |
 | Procedural shahar | 210 × 210 maydon, 9 ta 70 × 70 mantiqiy chunk, 5 × 5 chorraha tarmog‘i, fasadlar, bozor, bekatlar va ko‘cha jihozlari | `[strings]` `scripts/main.gd`; `[kuzatildi]` real OpenGL preview |
 | Personaj | Yurish, sprint, sakrash, o‘tirish, bo‘g‘inli original 3D tana va procedural animatsiya | `[strings]` `scripts/player.gd` |
-| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi, xavfsiz chiqish nuqtasi va avtomatik old kamera | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd`; `[kuzatildi]` self-test |
+| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi, xavfsiz chiqish nuqtasi va avtomatik old kamera; boshqariladigan JMJ sedani `151 km/soat`, kuchli tezlanish/tormoz va buzilmas kuzovga ega | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd`; `[kuzatildi]` self-test |
 | Trafik va piyodalar | 16 ta batafsil trafik avtomobili, 44 ta bo‘g‘inli piyoda NPC | `[kuzatildi]` `SELF_TEST_OK` |
 | Svetofor va chegara | 100 ta davriy svetofor, trafikning qizilda to‘xtashi va 4 ta ko‘rinmas fizik devor | `[strings]` `scripts/traffic_light.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
-| Zarar tizimi | Tezlikka bog‘liq, qayta zarba immunitetli piyoda to‘qnashuvi; oddiy urilishda haydovchini himoyalaydigan va og‘ir avariyada 12 gacha zarar beradigan salon; jon, zirh, avtomobil mustahkamligi va qayta tirilish | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
+| Zarar tizimi | Tezlikka bog‘liq, qayta zarba immunitetli piyoda to‘qnashuvi; oddiy urilishda haydovchini himoyalaydigan va og‘ir avariyada 12 gacha zarar beradigan salon; jon, zirh, buzilmas boshqariladigan avtomobil va trafik uchun alohida zarar/tiklanish | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
 | Pul, do‘kon va inventar | NPC joni tugaganda pul pickup’i; 3 ta do‘kon; dori, zirh, metall tayoq va elektroshoker; qurol xariddan so‘ng tanlanadi va alohida kaft ushlagichidagi 3D model ko‘rinadi | `[strings]` `scripts/money_pickup.gd`, `scripts/store.gd`, `scripts/player.gd`; `[kuzatildi]` self-test va real OpenGL `screenshots/preview.png` |
 | Topshiriq | JSON’dan yuklanadigan 4 bosqich, 25 000 so‘m mukofot | `[strings]` `data/mission_01.json`; `[kuzatildi]` self-test |
 | UI | Asosiy menyu, HUD, minimap, pause va ovoz sozlamasi | `[kuzatildi]` real OpenGL preview |
@@ -273,7 +273,7 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 Self-test muvaffaqiyat mezoni:
 
 ```text
-SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=1 trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK
+SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=tezkor+buzilmas trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK
 ```
 
 Qotish diagnostikasi bir xil Windows qurilmasi, AMD Radeon Graphics va `1280 × 720` OpenGL Compatibility oynasida 180 ta o‘lchov kadri bilan bajarildi — `[kuzatildi]`:

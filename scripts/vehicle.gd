@@ -5,11 +5,12 @@ signal haydovchi_chiqdi
 signal mustahkamlik_ozgardi(qiymat)
 signal vayron_boldi
 
-@export var maksimal_tezlik := 24.0
-@export var tezlanish := 9.5
-@export var tormoz := 20.0
+@export var maksimal_tezlik := 42.0
+@export var tezlanish := 16.5
+@export var tormoz := 28.0
 @export var burilish_tezligi := 1.65
 @export var kuzov_rangi := Color("1769aa")
+@export var buzilmas := true
 
 var boshqarilmoqda := false
 var haydovchi: CharacterBody3D
@@ -227,6 +228,11 @@ func piyoda_urilish_zarari_hisobla(tezlik_m_s: float) -> int:
 	return clampi(int(round((tezlik_m_s - 4.0) * 5.0)), 1, 70)
 
 func zarar_ol(miqdor: int, _manba = null) -> void:
+	if buzilmas:
+		mustahkamlik = maksimal_mustahkamlik
+		vayron = false
+		mustahkamlik_ozgardi.emit(mustahkamlik)
+		return
 	if vayron or miqdor <= 0:
 		return
 	mustahkamlik = maxi(0, mustahkamlik - miqdor)

@@ -49,12 +49,13 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - yuz, quloq, ko‘z, qosh, burun, kiyim detallari, nafas va bosh harakatlariga ega bo‘g‘inli original 3D personajlar;
 - tayyorlanish, zarba va tiklanish bosqichlariga ega gavda bilan bajariladigan yaxshilangan urish animatsiyasi;
 - salon, eshik, ikki qavatli panjara, tor faralar, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan original JMJ shahar sedani;
+- boshqariladigan JMJ sedani uchun `151 km/soat` maksimal tezlik, kuchliroq tezlanish va tormoz hamda buzilmas kuzov; trafik avtomobillari odatdagi zarar tizimida qoladi;
 - Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
 - transportga kirish/chiqish animatsiyasi, devor ichiga tushirmaydigan xavfsiz chiqish nuqtasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
 - svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan va zarardan keyin avtomatik tiklanadigan 16 ta batafsil trafik avtomobili;
 - turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC;
 - 100 ta ishlaydigan svetofor va xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
-- tezlikka bog‘liq muvozanatli urilish zarari, bir zarbaning qayta-qayta hisoblanishidan himoya, avtomobil mustahkamligi, o‘yinchi joni va himoya zirhi;
+- tezlikka bog‘liq muvozanatli urilish zarari, bir zarbaning qayta-qayta hisoblanishidan himoya, buzilmas boshqariladigan avtomobil, o‘yinchi joni va himoya zirhi;
 - oddiy urilishlarda haydovchini himoyalaydigan kamar/kuzov modeli; faqat juda kuchli avariya 1–12 oralig‘ida salon zarari beradi;
 - NPC joni tugaganda tushadigan yig‘ib olinadigan pul modeli;
 - uchta interaktiv do‘kon: dori, zirh, metall tayoq va elektroshoker;
