@@ -22,6 +22,8 @@ var collider: CollisionShape3D
 var zarar_immun_vaqti := 0.0
 var zarba_vaqti := 0.0
 var zarba_tezligi := Vector3.ZERO
+var zarba_vertikal_tezligi := 0.0
+var zarba_gravitatsiyasi := 18.0
 
 func _ready() -> void:
 	add_to_group("piyoda")
@@ -104,11 +106,15 @@ func _physics_process(delta: float) -> void:
 		return
 	if zarba_vaqti > 0.0:
 		zarba_vaqti = maxf(0.0, zarba_vaqti - delta)
-		zarba_tezligi = zarba_tezligi.move_toward(Vector3.ZERO, 10.0 * delta)
+		zarba_tezligi = zarba_tezligi.move_toward(Vector3.ZERO, 5.2 * delta)
+		zarba_vertikal_tezligi -= zarba_gravitatsiyasi * delta
 		velocity.x = zarba_tezligi.x
 		velocity.z = zarba_tezligi.z
-		velocity.y = -0.7
+		velocity.y = zarba_vertikal_tezligi
 		move_and_slide()
+		if is_on_floor() and zarba_vertikal_tezligi <= 0.0:
+			zarba_vertikal_tezligi = 0.0
+			zarba_vaqti = 0.0
 		if _animatsiya_kerak():
 			_animatsiya(delta, false)
 		return
@@ -166,15 +172,16 @@ func zarar_ol(miqdor: int, manba = null) -> void:
 	zarar_immun_vaqti = 0.48
 	jon -= miqdor
 	model_root.rotation.z = deg_to_rad(rng.randf_range(-8.0, 8.0))
-	if jon <= 0:
-		_halok_bolish()
-	elif manba is Node3D:
+	if manba is Node3D:
 		var itarish: Vector3 = global_position - manba.global_position
 		itarish.y = 0.0
 		if itarish.length_squared() > 0.01:
-			zarba_tezligi = itarish.normalized() * clampf(1.5 + miqdor * 0.055, 1.5, 5.8)
-			zarba_vaqti = 0.30
-			kutish_vaqti = maxf(kutish_vaqti, 0.45)
+			zarba_tezligi = itarish.normalized() * clampf(3.2 + miqdor * 0.09, 3.5, 8.5)
+			zarba_vertikal_tezligi = clampf(4.2 + miqdor * 0.055, 4.5, 7.2)
+			zarba_vaqti = 1.15
+			kutish_vaqti = maxf(kutish_vaqti, 0.65)
+	if jon <= 0:
+		_halok_bolish()
 
 func _halok_bolish() -> void:
 	olgan = true
@@ -185,9 +192,14 @@ func _halok_bolish() -> void:
 	var tushadigan_pul := rng.randi_range(1800, 5200)
 	pul_tushdi.emit(global_position + Vector3.UP * 0.35, tushadigan_pul)
 	halok_boldi.emit(self)
+	var boshlangich_joy := global_position
+	var uchish_joyi := boshlangich_joy + zarba_tezligi * 0.26 + Vector3.UP * clampf(zarba_vertikal_tezligi * 0.20, 0.65, 1.45)
+	var tushish_joyi := Vector3(uchish_joyi.x, boshlangich_joy.y, uchish_joyi.z)
 	var tween := create_tween()
-	tween.tween_property(model_root, "rotation:z", deg_to_rad(88.0), 0.42).set_trans(Tween.TRANS_QUAD)
-	tween.parallel().tween_property(model_root, "position:y", 0.18, 0.42)
+	tween.tween_property(self, "global_position", uchish_joyi, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(model_root, "rotation:z", deg_to_rad(88.0), 0.30)
+	tween.tween_property(self, "global_position", tushish_joyi, 0.34).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(model_root, "position:y", 0.18, 0.34)
 	tween.tween_interval(1.6)
 	tween.tween_callback(queue_free)
 

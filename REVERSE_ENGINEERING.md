@@ -253,8 +253,8 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 | Godot loyihasi | Tayyor, repository root papkasida | `[kuzatildi]` mahalliy fayllar |
 | Procedural shahar | 210 × 210 maydon, 9 ta 70 × 70 mantiqiy chunk, 5 × 5 chorraha tarmog‘i, fasadlar, bozor, bekatlar va ko‘cha jihozlari | `[strings]` `scripts/main.gd`; `[kuzatildi]` real OpenGL preview |
 | Personaj | Yurish, sprint, sakrash, o‘tirish, bo‘g‘inli original 3D tana va procedural animatsiya | `[strings]` `scripts/player.gd` |
-| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi, xavfsiz chiqish nuqtasi va avtomatik old kamera; boshqariladigan JMJ sedani `270 km/soat`, tezlikni saqlash va buzilmas kuzovga ega | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd`; `[kuzatildi]` self-test |
-| Trafik va piyodalar | `E` bilan egallanadigan, yer sathiga yopishtirilgan 16 ta batafsil trafik avtomobili; 44 ta bo‘g‘inli piyoda NPC | `[kuzatildi]` `SELF_TEST_OK`; `[strings]` `scripts/traffic_car.gd` |
+| Transport | Ochiladigan eshik, salon, haydovchi, gaz, tormoz, rul, kuzov og‘ishi, xavfsiz chiqish nuqtasi va avtomatik old kamera; boshqariladigan JMJ sedani `270 km/soat`, gaz qo‘yib yuborilganda yumshoq sekinlashish va buzilmas kuzovga ega | `[strings]` `scripts/vehicle.gd`, `scripts/player.gd`; `[kuzatildi]` self-test |
+| Trafik va piyodalar | `E` bilan egallanadigan, yer sathiga yopishtirilgan 16 ta batafsil trafik avtomobili; 44 ta bo‘g‘inli piyoda NPC; zarba kuchiga mos orqaga va yuqoriga uchish | `[kuzatildi]` `SELF_TEST_OK`; `[strings]` `scripts/traffic_car.gd`, `scripts/pedestrian.gd` |
 | Svetofor va chegara | 100 ta davriy svetofor, trafikning qizilda to‘xtashi va 4 ta ko‘rinmas fizik devor | `[strings]` `scripts/traffic_light.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
 | Zarar tizimi | Tezlikka bog‘liq, qayta zarba immunitetli piyoda to‘qnashuvi; transport ichida o‘yinchi jonini 100% saqlaydigan salon; jon, zirh, buzilmas JMJ avtomobili va trafik uchun alohida zarar/tiklanish | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd`, `scripts/main.gd`; `[kuzatildi]` self-test |
 | Yo‘l tozaligi | 71 ta daraxt, chiroq, bekat, skameyka va mahalla markazi asfalt chegarasidan tashqarida; topshiriq manzili ham mahalla ichiga ko‘chirilgan | `[strings]` `scripts/main.gd`, `data/mission_01.json`; `[kuzatildi]` self-test va real OpenGL `screenshots/preview.png` |
@@ -263,7 +263,7 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 | UI | Asosiy menyu, HUD, minimap, pause va ovoz sozlamasi | `[kuzatildi]` real OpenGL preview |
 | Kirish brendi | Asosiy menyuning chap pastki qismida `by JMJ gems` yozuvi | `[kuzatildi]` `screenshots/preview_menu.png`; `[strings]` `scripts/main.gd` |
 | Tungi yoritish | Doimiy tungi muhit, 40 ta `OmniLight3D` ko‘cha fonari, emissiv derazalar va 17 ta avtomobil `SpotLight3D` farasi; real yorug‘lik kameraga yaqin bo‘lganda LOD orqali faol | `[kuzatildi]` real OpenGL `screenshots/preview.png` va `screenshots/preview_vehicle.png`; `[strings]` `scripts/main.gd`, `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
-| Jang animatsiyasi | Tayyorlanish, gavda bilan zarba va tiklanishdan iborat uch bosqich; zarar zarba kadrida beriladi | `[strings]` `scripts/player.gd`; `[kuzatildi]` self-test |
+| Jang animatsiyasi | Tayyorlanish, gavda bilan zarba va tiklanishdan iborat uch bosqich; zarar zarba kadrida beriladi va piyoda zarba kuchiga qarab havoga ko‘tarilib orqaga uchadi | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`; `[kuzatildi]` self-test |
 | Original transport dizayni | Ikki qavatli panjara va tor farali JMJ sedani; trafik tiqilib qolsa yo‘lga qaytadi va zarardan keyin avtomatik tiklanadi | `[kuzatildi]` real OpenGL `screenshots/preview_vehicle.png`; `[strings]` `scripts/vehicle.gd`, `scripts/traffic_car.gd` |
 | Personaj tafsilotlari | Ko‘z oqi va qorachiq, qosh, quloq, burun, yoqa, tugma, bosh qarashi va tinch holat harakati | `[strings]` `scripts/player.gd`, `scripts/pedestrian.gd`; `[kuzatildi]` real OpenGL preview |
 | Ishlash optimizatsiyasi | Yo‘l chiziqlari va zebra `MultiMesh`; mesh segmentlari kamaytirilgan; masofaviy LOD; trafik sezgisi keshlangan; svetofor 4 Hz; HUD/minimap 10 Hz; uzoq chiroqlar o‘chadi | `[strings]` `scripts/main.gd`, `scripts/traffic_car.gd`, `scripts/traffic_light.gd`, `scripts/minimap.gd`; `[kuzatildi]` ichki performance test |
@@ -274,7 +274,7 @@ Bu bo‘lim taklif emas, ishchi loyiha va bajarilgan avtomatik sinov natijasidir
 Self-test muvaffaqiyat mezoni:
 
 ```text
-SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+coast trafik=16+egallanadi parvoz=yoq piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK
+SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash trafik=16+egallanadi parvoz=yoq piyoda=44+zarba_uchishi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK
 ```
 
 Qotish diagnostikasi bir xil Windows qurilmasi, AMD Radeon Graphics va `1280 × 720` OpenGL Compatibility oynasida 180 ta o‘lchov kadri bilan bajarildi — `[kuzatildi]`:

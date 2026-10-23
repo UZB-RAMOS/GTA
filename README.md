@@ -50,12 +50,12 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - tayyorlanish, zarba va tiklanish bosqichlariga ega gavda bilan bajariladigan yaxshilangan urish animatsiyasi;
 - salon, eshik, ikki qavatli panjara, tor faralar, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan original JMJ shahar sedani;
 - boshqariladigan JMJ sedani uchun `270 km/soat` maksimal tezlik, kuchli tezlanish va tormoz hamda buzilmas kuzov;
-- gaz qo‘yib yuborilganda tezlikni saqlaydigan erkin yurish: mashina faqat `S` yoki `Space` bilan tormozlanadi;
+- gaz qo‘yib yuborilganda tezlikni keskin yo‘qotmay, `1.35 m/s²` qarshilik bilan asta-sekin sekinlashadigan erkin yurish; `S` yoki `Space` tez tormozlaydi;
 - Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
 - transportga kirish/chiqish animatsiyasi, devor ichiga tushirmaydigan xavfsiz chiqish nuqtasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
 - svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan, zarardan keyin avtomatik tiklanadigan va o‘yinchi `E` bilan egallashi mumkin bo‘lgan 16 ta batafsil trafik avtomobili;
 - barcha avtomobillarni tekis yo‘l sathida ushlab turadigan parvozga qarshi barqarorlashtirish;
-- turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC;
+- turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC; musht, tayoq yoki elektroshoker zarbasi ularni kuchga qarab orqaga va havoga uloqtiradi;
 - 100 ta ishlaydigan svetofor va xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
 - tezlikka bog‘liq muvozanatli urilish zarari, bir zarbaning qayta-qayta hisoblanishidan himoya, buzilmas boshqariladigan avtomobil, o‘yinchi joni va himoya zirhi;
 - o‘yinchi transport ichida bo‘lganida har qanday to‘qnashuvdan jonini to‘liq himoyalaydigan salon modeli;

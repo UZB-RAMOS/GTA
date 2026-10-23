@@ -607,7 +607,7 @@ func _transportlar_yarat() -> void:
 
 func _piyodalar_yarat() -> void:
 	var ranglar := [Color("75451f"), Color("28466d"), Color("4b6934"), Color("66334f"), Color("716624"), Color("245142"), Color("642b28")]
-	var markazlar := [Vector3(-20, 0.1, -18), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29), Vector3(-84, 0.1, -53), Vector3(-53, 0.1, 53), Vector3(53, 0.1, -53), Vector3(84, 0.1, 52)]
+	var markazlar := [Vector3(-25, 0.1, -25), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29), Vector3(-84, 0.1, -53), Vector3(-53, 0.1, 53), Vector3(53, 0.1, -53), Vector3(84, 0.1, 52)]
 	for i in range(44):
 		var piyoda := PedestrianScript.new()
 		piyoda.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -1444,13 +1444,15 @@ func _self_test() -> void:
 		xatolar.append("Tezkor transport sozlamasi noto‘g‘ri")
 	topshiriq_transporti.joriy_tezlik = 18.0
 	topshiriq_transporti.boshqaruv_tezligini_yangila(0.0, false, 1.0)
-	if not is_equal_approx(topshiriq_transporti.joriy_tezlik, 18.0):
-		xatolar.append("Gaz qo‘yib yuborilganda transport tezligi saqlanmadi")
+	if topshiriq_transporti.joriy_tezlik >= 18.0 or topshiriq_transporti.joriy_tezlik < 16.0:
+		xatolar.append("Gaz qo‘yib yuborilganda transport yumshoq sekinlashmadi")
+	var erkin_tezlik: float = float(topshiriq_transporti.joriy_tezlik)
 	topshiriq_transporti.boshqaruv_tezligini_yangila(1.0, false, 0.5)
-	if topshiriq_transporti.joriy_tezlik <= 18.0:
+	if topshiriq_transporti.joriy_tezlik <= erkin_tezlik:
 		xatolar.append("Gaz bosilganda transport tezligi oshmadi")
+	var gazdan_keyingi_tezlik: float = float(topshiriq_transporti.joriy_tezlik)
 	topshiriq_transporti.boshqaruv_tezligini_yangila(-1.0, false, 0.5)
-	if topshiriq_transporti.joriy_tezlik >= 26.25:
+	if topshiriq_transporti.joriy_tezlik >= gazdan_keyingi_tezlik:
 		xatolar.append("Tormoz bosilganda transport tezligi kamaymadi")
 	topshiriq_transporti.joriy_tezlik = 0.0
 	if topshiriq_transporti.salon_zarari_hisobla(12) != 0 or topshiriq_transporti.salon_zarari_hisobla(999) != 0:
@@ -1484,6 +1486,16 @@ func _self_test() -> void:
 			xatolar.append("Trafik avtomobili nosoz holatdan tiklanmadi")
 	var sinov_piyoda = get_tree().get_first_node_in_group("piyoda")
 	if is_instance_valid(sinov_piyoda):
+		oyinchi.global_position = sinov_piyoda.global_position + Vector3(0.0, 0.0, 2.0)
+		var piyoda_boshlangich_y: float = float(sinov_piyoda.global_position.y)
+		sinov_piyoda.zarar_ol(18, oyinchi)
+		if sinov_piyoda.zarba_vertikal_tezligi <= 0.0 or sinov_piyoda.zarba_tezligi.length() < 3.5 or sinov_piyoda.zarba_vaqti < 1.0:
+			xatolar.append("Piyoda zarbadan havoga uchmadi")
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		if sinov_piyoda.global_position.y <= piyoda_boshlangich_y + 0.01:
+			xatolar.append("Piyoda zarbadan yuqoriga ko‘tarilmadi: %.3f -> %.3f, vy=%.3f, t=%.3f" % [piyoda_boshlangich_y, sinov_piyoda.global_position.y, sinov_piyoda.zarba_vertikal_tezligi, sinov_piyoda.zarba_vaqti])
+		sinov_piyoda.zarar_immun_vaqti = 0.0
 		sinov_piyoda.zarar_ol(999, oyinchi)
 		if get_tree().get_nodes_in_group("pul_pickup").is_empty():
 			xatolar.append("Piyoda halok bo‘lganda pul tushmadi")
@@ -1524,7 +1536,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+coast trafik=16+egallanadi parvoz=yoq piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash trafik=16+egallanadi parvoz=yoq piyoda=44+zarba_uchishi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
 		await get_tree().process_frame
 		get_tree().quit(0)
 	else:

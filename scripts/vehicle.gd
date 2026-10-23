@@ -10,6 +10,7 @@ signal vayron_boldi
 @export var maksimal_tezlik := 75.0
 @export var tezlanish := 16.5
 @export var tormoz := 28.0
+@export var erkin_sekinlashish := 1.35
 @export var burilish_tezligi := 1.65
 @export var kuzov_rangi := Color("1769aa")
 @export var buzilmas := true
@@ -196,6 +197,8 @@ func boshqaruv_tezligini_yangila(gaz: float, qol_tormozi_bosildi: bool, delta: f
 			joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * delta)
 		else:
 			joriy_tezlik = move_toward(joriy_tezlik, -maksimal_tezlik * 0.38, tezlanish * 0.72 * delta)
+	else:
+		joriy_tezlik = move_toward(joriy_tezlik, 0.0, erkin_sekinlashish * delta)
 	if qol_tormozi_bosildi:
 		joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * 1.8 * delta)
 

@@ -8,6 +8,7 @@ const YOL_SATHI := -0.10
 @export var maksimal_tezlik := 52.0
 @export var tezlanish := 14.0
 @export var tormoz := 30.0
+@export var erkin_sekinlashish := 1.35
 @export var burilish_tezligi := 1.55
 @export var buzilmas := false
 var yol: Array[Vector3] = []
@@ -158,6 +159,8 @@ func boshqaruv_tezligini_yangila(gaz: float, qol_tormozi_bosildi: bool, delta: f
 			joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * delta)
 		else:
 			joriy_tezlik = move_toward(joriy_tezlik, -maksimal_tezlik * 0.34, tezlanish * 0.68 * delta)
+	else:
+		joriy_tezlik = move_toward(joriy_tezlik, 0.0, erkin_sekinlashish * delta)
 	if qol_tormozi_bosildi:
 		joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * 2.0 * delta)
 
