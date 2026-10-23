@@ -1,8 +1,15 @@
 extends CharacterBody3D
 
+const YOL_SATHI := -0.10
+
 @export var rang := Color("c54245")
 @export var tezlik := 7.0
 @export var model_turi := 0
+@export var maksimal_tezlik := 52.0
+@export var tezlanish := 14.0
+@export var tormoz := 30.0
+@export var burilish_tezligi := 1.55
+@export var buzilmas := false
 var yol: Array[Vector3] = []
 var indeks := 0
 var joriy_tezlik := 0.0
@@ -15,11 +22,17 @@ var tiklanish_vaqti := 0.0
 var qotish_vaqti := 0.0
 var sezgi_vaqti := 0.0
 var toxtash_kerak := false
+var boshqarilmoqda := false
+var haydovchi: CharacterBody3D
 
 func _ready() -> void:
 	add_to_group("trafik")
+	add_to_group("transport")
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4 | 8
+	floor_snap_length = 0.45
+	up_direction = Vector3.UP
+	global_position.y = YOL_SATHI
 	_yarat_model()
 	sezgi_vaqti = float(get_instance_id() % 12) * 0.015
 
@@ -77,13 +90,17 @@ func _yarat_model() -> void:
 
 func _physics_process(delta: float) -> void:
 	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
-	if yol.is_empty():
+	if yol.is_empty() and not boshqarilmoqda:
 		return
 	if vayron:
 		tiklanish_vaqti -= delta
 		velocity = Vector3.ZERO
+		_yerga_yopishtir()
 		if tiklanish_vaqti <= 0.0:
 			_avtomatik_tiklash()
+		return
+	if boshqarilmoqda:
+		_oyinchi_boshqaruvi(delta)
 		return
 	var maqsad := yol[indeks]
 	var farq := maqsad - global_position
@@ -101,10 +118,11 @@ func _physics_process(delta: float) -> void:
 	var maqsad_tezlik := 0.0 if toxtash_kerak else tezlik
 	joriy_tezlik = move_toward(joriy_tezlik, maqsad_tezlik, (10.0 if maqsad_tezlik == 0.0 else 3.0) * delta)
 	velocity = -global_transform.basis.z * joriy_tezlik
-	velocity.y = -0.5
+	velocity.y = -1.5
 	var zarba_tezligi: float = absf(joriy_tezlik)
 	var oldingi_joy := global_position
 	move_and_slide()
+	_yerga_yopishtir()
 	if maqsad_tezlik > 0.0 and joriy_tezlik > 2.0 and global_position.distance_to(oldingi_joy) < 0.008:
 		qotish_vaqti += delta
 	else:
@@ -114,6 +132,40 @@ func _physics_process(delta: float) -> void:
 	_urilishni_tekshir(zarba_tezligi)
 	for gildirak in gildiraklar:
 		gildirak.rotate_x(joriy_tezlik * delta / 0.34)
+
+func _oyinchi_boshqaruvi(delta: float) -> void:
+	var gaz := Input.get_axis("orqaga", "oldinga")
+	var rul := Input.get_axis("ong", "chap")
+	boshqaruv_tezligini_yangila(gaz, Input.is_action_pressed("qol_tormozi"), delta)
+	if absf(joriy_tezlik) > 0.35:
+		var tezlik_nisbati := clampf(absf(joriy_tezlik) / maksimal_tezlik, 0.18, 1.0)
+		var rul_samarasi := lerpf(1.0, 0.42, tezlik_nisbati)
+		rotate_y(rul * burilish_tezligi * rul_samarasi * delta * signf(joriy_tezlik))
+	velocity = -global_transform.basis.z * joriy_tezlik
+	velocity.y = -1.5
+	var zarba_tezligi := absf(joriy_tezlik)
+	move_and_slide()
+	_yerga_yopishtir()
+	_urilishni_tekshir(zarba_tezligi)
+	for gildirak in gildiraklar:
+		gildirak.rotate_x(joriy_tezlik * delta / 0.34)
+
+func boshqaruv_tezligini_yangila(gaz: float, qol_tormozi_bosildi: bool, delta: float) -> void:
+	if gaz > 0.0:
+		joriy_tezlik = move_toward(joriy_tezlik, maksimal_tezlik, tezlanish * delta)
+	elif gaz < 0.0:
+		if joriy_tezlik > 0.5:
+			joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * delta)
+		else:
+			joriy_tezlik = move_toward(joriy_tezlik, -maksimal_tezlik * 0.34, tezlanish * 0.68 * delta)
+	if qol_tormozi_bosildi:
+		joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * 2.0 * delta)
+
+func _yerga_yopishtir() -> void:
+	global_position.y = YOL_SATHI
+	rotation.x = 0.0
+	rotation.z = 0.0
+	velocity.y = -1.5
 
 func _urilishni_tekshir(zarba_tezligi: float) -> void:
 	if zarba_sovush_vaqti > 0.0 or zarba_tezligi < 3.4 or get_slide_collision_count() == 0:
@@ -126,7 +178,8 @@ func _urilishni_tekshir(zarba_tezligi: float) -> void:
 			if zarar > 0:
 				nishon.zarar_ol(zarar, self)
 		zarar_ol(maxi(1, int((zarba_tezligi - 2.5) * 2.4)))
-	joriy_tezlik *= 0.48
+	if not boshqarilmoqda:
+		joriy_tezlik *= 0.48
 
 func piyoda_urilish_zarari_hisobla(tezlik_m_s: float) -> int:
 	if tezlik_m_s < 4.0:
@@ -140,6 +193,8 @@ func zarar_ol(miqdor: int, _manba = null) -> void:
 	if mustahkamlik <= 0:
 		vayron = true
 		joriy_tezlik = 0.0
+		if boshqarilmoqda:
+			chiqish(true)
 		var yozuv := Label3D.new()
 		yozuv.name = "TiklanishYozuvi"
 		yozuv.text = "TIKLANMOQDA"
@@ -164,13 +219,65 @@ func _avtomatik_tiklash() -> void:
 func _yolga_qaytar() -> void:
 	if yol.is_empty():
 		return
-	global_position = yol[indeks] + Vector3.UP * 0.22
+	global_position = yol[indeks]
+	global_position.y = YOL_SATHI
 	var keyingi := yol[(indeks + 1) % yol.size()]
 	var yonalish := (keyingi - global_position).normalized()
 	rotation.y = atan2(-yonalish.x, -yonalish.z)
 	indeks = (indeks + 1) % yol.size()
 	joriy_tezlik = 0.0
 	qotish_vaqti = 0.0
+	_yerga_yopishtir()
+
+func kirish(oyinchi: CharacterBody3D) -> void:
+	if boshqarilmoqda or vayron:
+		return
+	boshqarilmoqda = true
+	haydovchi = oyinchi
+	joriy_tezlik = 0.0
+	toxtash_kerak = false
+	qotish_vaqti = 0.0
+	oyinchi.transportga_otir(self)
+
+func chiqish(majburiy := false) -> void:
+	if not boshqarilmoqda or not is_instance_valid(haydovchi):
+		return
+	if not majburiy and absf(joriy_tezlik) > 1.4:
+		return
+	var xavfsiz_joy := _xavfsiz_chiqish_nuqtasi()
+	if xavfsiz_joy.is_empty() and not majburiy:
+		return
+	var chiqish_nuqta: Vector3 = xavfsiz_joy.get("joy", global_position + global_transform.basis.x.normalized() * 2.1 + Vector3.UP * 0.18)
+	var eski_haydovchi := haydovchi
+	boshqarilmoqda = false
+	haydovchi = null
+	joriy_tezlik = 0.0
+	eski_haydovchi.transportdan_tush(chiqish_nuqta, rotation.y)
+
+func _xavfsiz_chiqish_nuqtasi() -> Dictionary:
+	var yon := global_transform.basis.x.normalized()
+	var old := -global_transform.basis.z.normalized()
+	var nomzodlar := [
+		global_position - yon * 1.95 + Vector3.UP * 0.18,
+		global_position + yon * 1.95 + Vector3.UP * 0.18,
+		global_position - old * 2.25 + Vector3.UP * 0.18,
+		global_position + old * 2.25 + Vector3.UP * 0.18
+	]
+	var shakl := CapsuleShape3D.new()
+	shakl.radius = 0.42
+	shakl.height = 1.80
+	for nomzod in nomzodlar:
+		var sorov := PhysicsShapeQueryParameters3D.new()
+		sorov.shape = shakl
+		sorov.transform = Transform3D(Basis.IDENTITY, nomzod + Vector3.UP * 0.92)
+		sorov.collision_mask = 1 | 4 | 8
+		sorov.exclude = [get_rid(), haydovchi.get_rid()]
+		if get_world_3d().direct_space_state.intersect_shape(sorov, 1).is_empty():
+			return {"joy": nomzod}
+	return {}
+
+func tezlik_kmh() -> int:
+	return int(absf(joriy_tezlik) * 3.6)
 
 func _qizil_chiroq_yaqin() -> bool:
 	var vertikal: bool = abs(global_transform.basis.z.z) > abs(global_transform.basis.z.x)
@@ -183,8 +290,7 @@ func _qizil_chiroq_yaqin() -> bool:
 	return false
 
 func _oldinda_mashina() -> bool:
-	var avtomobillar := get_tree().get_nodes_in_group("trafik")
-	avtomobillar.append_array(get_tree().get_nodes_in_group("transport"))
+	var avtomobillar := get_tree().get_nodes_in_group("transport")
 	for boshqa in avtomobillar:
 		if boshqa == self:
 			continue

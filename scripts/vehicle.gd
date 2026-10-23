@@ -1,11 +1,13 @@
 extends CharacterBody3D
 
+const YOL_SATHI := -0.10
+
 signal haydovchi_kirdi
 signal haydovchi_chiqdi
 signal mustahkamlik_ozgardi(qiymat)
 signal vayron_boldi
 
-@export var maksimal_tezlik := 42.0
+@export var maksimal_tezlik := 75.0
 @export var tezlanish := 16.5
 @export var tormoz := 28.0
 @export var burilish_tezligi := 1.65
@@ -144,7 +146,7 @@ func _haydovchi_yarat() -> Node3D:
 func _physics_process(delta: float) -> void:
 	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
 	if global_position.y < -2.0:
-		global_position.y = 0.4
+		global_position.y = YOL_SATHI
 		rotation.x = 0.0
 		rotation.z = 0.0
 		tiklash()
@@ -158,17 +160,7 @@ func _physics_process(delta: float) -> void:
 	if boshqarilmoqda and not vayron:
 		gaz = Input.get_axis("orqaga", "oldinga")
 		rul = Input.get_axis("ong", "chap")
-		if gaz > 0.0:
-			joriy_tezlik = move_toward(joriy_tezlik, maksimal_tezlik, tezlanish * delta)
-		elif gaz < 0.0:
-			if joriy_tezlik > 1.0:
-				joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * delta)
-			else:
-				joriy_tezlik = move_toward(joriy_tezlik, -maksimal_tezlik * 0.38, tezlanish * 0.72 * delta)
-		else:
-			joriy_tezlik = move_toward(joriy_tezlik, 0.0, 3.2 * delta)
-		if Input.is_action_pressed("qol_tormozi"):
-			joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * 1.8 * delta)
+		boshqaruv_tezligini_yangila(gaz, Input.is_action_pressed("qol_tormozi"), delta)
 	else:
 		joriy_tezlik = move_toward(joriy_tezlik, 0.0, 5.5 * delta)
 
@@ -189,7 +181,23 @@ func _physics_process(delta: float) -> void:
 	velocity.z = old.z * joriy_tezlik
 	var zarba_tezligi: float = absf(joriy_tezlik)
 	move_and_slide()
+	if global_position.y > 0.08 or global_position.y < -0.35:
+		global_position.y = YOL_SATHI
+		velocity.y = -0.25
+	rotation.x = 0.0
+	rotation.z = 0.0
 	_urilishni_tekshir(zarba_tezligi)
+
+func boshqaruv_tezligini_yangila(gaz: float, qol_tormozi_bosildi: bool, delta: float) -> void:
+	if gaz > 0.0:
+		joriy_tezlik = move_toward(joriy_tezlik, maksimal_tezlik, tezlanish * delta)
+	elif gaz < 0.0:
+		if joriy_tezlik > 1.0:
+			joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * delta)
+		else:
+			joriy_tezlik = move_toward(joriy_tezlik, -maksimal_tezlik * 0.38, tezlanish * 0.72 * delta)
+	if qol_tormozi_bosildi:
+		joriy_tezlik = move_toward(joriy_tezlik, 0.0, tormoz * 1.8 * delta)
 
 func _urilishni_tekshir(zarba_tezligi: float) -> void:
 	if zarba_sovush_vaqti > 0.0 or zarba_tezligi < 3.6 or get_slide_collision_count() == 0:
@@ -210,16 +218,10 @@ func _urilishni_tekshir(zarba_tezligi: float) -> void:
 func zarar_sovush_va_tezlik(miqdor: int) -> void:
 	zarba_sovush_vaqti = 0.42
 	zarar_ol(miqdor)
-	joriy_tezlik *= 0.42
-	var salon_zarari := salon_zarari_hisobla(miqdor)
-	if boshqarilmoqda and is_instance_valid(haydovchi) and salon_zarari > 0:
-		haydovchi.zarar_ol(salon_zarari, self)
 
-func salon_zarari_hisobla(toqnashuv_zarari: int) -> int:
-	# Kamar va kuzov oddiy urilishlarni yutadi; faqat juda kuchli avariya haydovchiga zarar beradi.
-	if toqnashuv_zarari < 28:
-		return 0
-	return clampi(int(round((toqnashuv_zarari - 22) * 0.16)), 1, 12)
+func salon_zarari_hisobla(_toqnashuv_zarari: int) -> int:
+	# O‘yinchi transport ichida bo‘lsa, har qanday to‘qnashuvda jon yo‘qotmaydi.
+	return 0
 
 func piyoda_urilish_zarari_hisobla(tezlik_m_s: float) -> int:
 	# Past tezlik tegib ketish hisoblanadi, yuqori tezlik xavfli, ammo bir kadrda cheksiz zarar yo‘q.

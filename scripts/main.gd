@@ -14,6 +14,8 @@ const DUNYO_CHEGARASI := 104.0
 const DUNYO_HAJMI := 210.0
 const CHUNK_HAJMI := 70.0
 const YOL_KOORDINATALARI := [-70.0, -35.0, 0.0, 35.0, 70.0]
+const YOL_YARIM_KENGLIGI := 5.75
+const TRANSPORT_YER_SATHI := -0.10
 
 var oyinchi: CharacterBody3D
 var topshiriq_transporti: CharacterBody3D
@@ -190,7 +192,7 @@ func _shahar_yarat() -> void:
 	for x in markazlar:
 		for z in markazlar:
 			var blok := Vector2(x, z)
-			if blok.distance_to(Vector2(-20, -18)) < 12.0 or blok.distance_to(Vector2(18, -18)) < 12.0 or blok.distance_to(Vector2(38, 35)) < 12.0 or blok.distance_to(Vector2(-52, 53)) < 12.0 or blok.distance_to(Vector2(54, -52)) < 12.0:
+			if blok.distance_to(Vector2(-20, -18)) < 12.0 or blok.distance_to(Vector2(18, -18)) < 12.0 or blok.distance_to(Vector2(18, 18)) < 12.0 or blok.distance_to(Vector2(-52, 53)) < 12.0 or blok.distance_to(Vector2(54, -52)) < 12.0:
 				continue
 			var balandlik := rng.randf_range(5.0, 15.0)
 			var hajm := Vector3(rng.randf_range(7.0, 10.5), balandlik, rng.randf_range(7.0, 10.5))
@@ -206,8 +208,8 @@ func _shahar_yarat() -> void:
 	_kocha_jihozlari_yarat(shahar)
 	_svetoforlar_yarat(shahar)
 	_chegara_yarat(shahar)
-	_korsatkich_yarat(shahar, Vector3(-3.8, 3.2, -18), "ESKI SHAHAR", Color("126aa0"))
-	_korsatkich_yarat(shahar, Vector3(3.8, 3.2, 23), "YANGI MAHALLA", Color("2c8b57"))
+	_korsatkich_yarat(shahar, Vector3(-12.0, 3.2, -18), "ESKI SHAHAR", Color("126aa0"))
+	_korsatkich_yarat(shahar, Vector3(12.0, 3.2, 23), "YANGI MAHALLA", Color("2c8b57"))
 
 func _yol_chiziqlari(parent: Node3D, vertikal: bool, koordinata: float) -> void:
 	var joylar: Array[Vector3] = []
@@ -265,8 +267,12 @@ func _bozor_yarat(parent: Node3D) -> void:
 		_vizual_quti(parent, markaz + Vector3(x, 1.45, 4.53), Vector3(1.8, 1.25, 0.08), Color("244d68"))
 
 func _mahalla_markazi_yarat(parent: Node3D) -> void:
-	var markaz := Vector3(38, 0, 35)
-	_vizual_quti(parent, markaz + Vector3(0, 0.12, 0), Vector3(9, 0.24, 9), Color("d9c39c"))
+	var markaz := Node3D.new()
+	markaz.name = "MahallaMarkazi"
+	markaz.position = Vector3(18, 0, 18)
+	markaz.add_to_group("yol_chetidagi_obyekt")
+	parent.add_child(markaz)
+	_vizual_quti(markaz, Vector3(0, 0.12, 0), Vector3(9, 0.24, 9), Color("d9c39c"))
 	var favvora := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = 2.2
@@ -275,23 +281,25 @@ func _mahalla_markazi_yarat(parent: Node3D) -> void:
 	mesh.radial_segments = 18
 	mesh.rings = 1
 	favvora.mesh = mesh
-	favvora.position = markaz + Vector3(0, 0.32, 0)
+	favvora.position = Vector3(0, 0.32, 0)
 	favvora.material_override = _material(Color("67b9d1"), 0.25)
-	parent.add_child(favvora)
-	_korsatkich_yarat(parent, markaz + Vector3(0, 3.1, -4.2), "MAHALLA MARKAZI", Color("805d35"))
+	markaz.add_child(favvora)
+	_korsatkich_yarat(markaz, Vector3(0, 3.1, -4.2), "MAHALLA MARKAZI", Color("805d35"))
 
 func _daraxtlar_yarat(parent: Node3D) -> void:
 	var joylar := [
-		Vector3(-33, 0, -33), Vector3(-9, 0, -31), Vector3(10, 0, -29), Vector3(33, 0, -31),
-		Vector3(-31, 0, -9), Vector3(30, 0, -9), Vector3(-31, 0, 10), Vector3(31, 0, 11),
-		Vector3(-31, 0, 31), Vector3(-9, 0, 31), Vector3(10, 0, 31), Vector3(29, 0, 29),
+		Vector3(-26, 0, -26), Vector3(-10, 0, -25), Vector3(10, 0, -25), Vector3(25, 0, -25),
+		Vector3(-25, 0, -10), Vector3(25, 0, -10), Vector3(-25, 0, 10), Vector3(25, 0, 10),
+		Vector3(-25, 0, 25), Vector3(-10, 0, 25), Vector3(10, 0, 25), Vector3(25, 0, 25),
 		Vector3(-91, 0, -58), Vector3(-82, 0, 54), Vector3(-56, 0, 88), Vector3(-18, 0, 88),
 		Vector3(18, 0, -88), Vector3(52, 0, 86), Vector3(88, 0, 54), Vector3(88, 0, -19),
 		Vector3(55, 0, -88), Vector3(-88, 0, 18), Vector3(-54, 0, -86), Vector3(86, 0, 87)
 	]
 	for p in joylar:
 		var daraxt := Node3D.new()
+		daraxt.name = "YolChetidagiDaraxt"
 		daraxt.position = p
+		daraxt.add_to_group("yol_chetidagi_obyekt")
 		parent.add_child(daraxt)
 		var tana := MeshInstance3D.new()
 		var tana_mesh := CylinderMesh.new()
@@ -334,21 +342,22 @@ func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 	chiroq_mat.emission = Color("fff0b3")
 	chiroq_mat.emission_energy_multiplier = 1.15
 	var chiroq_joylari := [
-		Vector3(-35, 0, -50), Vector3(-35, 0, -24), Vector3(-35, 0, 18), Vector3(-35, 0, 50),
-		Vector3(35, 0, -50), Vector3(35, 0, -24), Vector3(35, 0, 18), Vector3(35, 0, 50),
-		Vector3(-50, 0, -35), Vector3(-22, 0, -35), Vector3(22, 0, -35), Vector3(50, 0, -35),
-		Vector3(-50, 0, 35), Vector3(-22, 0, 35), Vector3(22, 0, 35), Vector3(50, 0, 35),
-		Vector3(-76, 0, -88), Vector3(-41, 0, -88), Vector3(41, 0, -88), Vector3(76, 0, -88),
-		Vector3(-76, 0, 88), Vector3(-41, 0, 88), Vector3(41, 0, 88), Vector3(76, 0, 88),
-		Vector3(-88, 0, -76), Vector3(-88, 0, 76), Vector3(88, 0, -76), Vector3(88, 0, 76),
+		Vector3(-28.1, 0, -50), Vector3(-41.9, 0, -24), Vector3(-28.1, 0, 18), Vector3(-41.9, 0, 50),
+		Vector3(41.9, 0, -50), Vector3(28.1, 0, -24), Vector3(41.9, 0, 18), Vector3(28.1, 0, 50),
+		Vector3(-50, 0, -28.1), Vector3(-22, 0, -41.9), Vector3(22, 0, -28.1), Vector3(50, 0, -41.9),
+		Vector3(-50, 0, 41.9), Vector3(-22, 0, 28.1), Vector3(22, 0, 41.9), Vector3(50, 0, 28.1),
+		Vector3(-77, 0, -88), Vector3(-42, 0, -88), Vector3(42, 0, -88), Vector3(77, 0, -88),
+		Vector3(-77, 0, 88), Vector3(-42, 0, 88), Vector3(42, 0, 88), Vector3(77, 0, 88),
+		Vector3(-88, 0, -77), Vector3(-88, 0, 77), Vector3(88, 0, -77), Vector3(88, 0, 77),
 		Vector3(-7, 0, -18), Vector3(7, 0, -18), Vector3(-7, 0, 18), Vector3(7, 0, 18),
-		Vector3(-70, 0, -7), Vector3(-70, 0, 7), Vector3(70, 0, -7), Vector3(70, 0, 7),
-		Vector3(-7, 0, -70), Vector3(7, 0, -70), Vector3(-7, 0, 70), Vector3(7, 0, 70)
+		Vector3(-63, 0, -7), Vector3(-63, 0, 7), Vector3(63, 0, -7), Vector3(63, 0, 7),
+		Vector3(-7, 0, -63), Vector3(7, 0, -63), Vector3(-7, 0, 63), Vector3(7, 0, 63)
 	]
 	for p in chiroq_joylari:
 		var ustun := Node3D.new()
 		ustun.name = "KochaChirogi"
 		ustun.position = p
+		ustun.add_to_group("yol_chetidagi_obyekt")
 		parent.add_child(ustun)
 		_vizual_silindr(ustun, Vector3(0, 2.6, 0), 0.075, 5.2, metall)
 		_vizual_quti(ustun, Vector3(0.38, 5.05, 0), Vector3(0.82, 0.08, 0.08), Color("384044"))
@@ -368,10 +377,11 @@ func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 		ustun.add_child(yoruglik)
 
 	# Bekatlar, o‘rindiqlar, axlat qutilari va yo‘l belgilari.
-	for p in [Vector3(-7.8, 0, -25), Vector3(7.8, 0, 23)]:
+	for p in [Vector3(-8.4, 0, -25), Vector3(8.4, 0, 23)]:
 		var bekat := Node3D.new()
 		bekat.name = "AvtobusBekati"
 		bekat.position = p
+		bekat.add_to_group("yol_chetidagi_obyekt")
 		parent.add_child(bekat)
 		_vizual_quti(bekat, Vector3(0, 1.45, 0), Vector3(3.8, 0.12, 1.55), Color("227eaa"))
 		for x in [-1.75, 1.75]:
@@ -384,9 +394,11 @@ func _kocha_jihozlari_yarat(parent: Node3D) -> void:
 		yozuv.outline_size = 5
 		yozuv.position = Vector3(0, 1.6, -0.05)
 		bekat.add_child(yozuv)
-	for p in [Vector3(-34.8, 0, -17), Vector3(34.8, 0, 13), Vector3(-15, 0, 34.8), Vector3(18, 0, -34.8)]:
+	for p in [Vector3(-28.0, 0, -17), Vector3(28.0, 0, 13), Vector3(-15, 0, 28.0), Vector3(18, 0, -28.0)]:
 		var jihoz := Node3D.new()
+		jihoz.name = "YolChetidagiOrindiq"
 		jihoz.position = p
+		jihoz.add_to_group("yol_chetidagi_obyekt")
 		parent.add_child(jihoz)
 		_vizual_quti(jihoz, Vector3(0, 0.48, 0), Vector3(1.85, 0.16, 0.48), Color("98633d"))
 		_vizual_quti(jihoz, Vector3(0, 0.86, 0.20), Vector3(1.85, 0.58, 0.12), Color("7b4e33"))
@@ -442,6 +454,14 @@ func _korsatkich_yarat(parent: Node3D, p: Vector3, matn: String, rang: Color) ->
 	label.position = p
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	parent.add_child(label)
+
+func _yol_ustidami(p: Vector3, zaxira := 0.0) -> bool:
+	for yol in YOL_KOORDINATALARI:
+		if absf(p.x - yol) <= YOL_YARIM_KENGLIGI + zaxira:
+			return true
+		if absf(p.z - yol) <= YOL_YARIM_KENGLIGI + zaxira:
+			return true
+	return false
 
 func _statik_quti(parent: Node3D, nom: String, p: Vector3, hajm: Vector3, rang: Color) -> StaticBody3D:
 	var body := StaticBody3D.new()
@@ -560,17 +580,17 @@ func _transportlar_yarat() -> void:
 	topshiriq_transporti.process_mode = Node.PROCESS_MODE_PAUSABLE
 	topshiriq_transporti.name = "JMJShaharSedani"
 	topshiriq_transporti.kuzov_rangi = Color("263f59")
-	topshiriq_transporti.position = Vector3(-12, 0.2, 2)
+	topshiriq_transporti.position = Vector3(-12, TRANSPORT_YER_SATHI, 2)
 	topshiriq_transporti.rotation.y = PI / 2.0
 	add_child(topshiriq_transporti)
 
 	var tashqi_yol: Array[Vector3] = [
-		Vector3(-70, 0.2, -70), Vector3(0, 0.2, -70), Vector3(70, 0.2, -70), Vector3(70, 0.2, 0),
-		Vector3(70, 0.2, 70), Vector3(0, 0.2, 70), Vector3(-70, 0.2, 70), Vector3(-70, 0.2, 0)
+		Vector3(-70, TRANSPORT_YER_SATHI, -70), Vector3(0, TRANSPORT_YER_SATHI, -70), Vector3(70, TRANSPORT_YER_SATHI, -70), Vector3(70, TRANSPORT_YER_SATHI, 0),
+		Vector3(70, TRANSPORT_YER_SATHI, 70), Vector3(0, TRANSPORT_YER_SATHI, 70), Vector3(-70, TRANSPORT_YER_SATHI, 70), Vector3(-70, TRANSPORT_YER_SATHI, 0)
 	]
 	var ichki_yol: Array[Vector3] = [
-		Vector3(-35, 0.2, -35), Vector3(0, 0.2, -35), Vector3(35, 0.2, -35), Vector3(35, 0.2, 0),
-		Vector3(35, 0.2, 35), Vector3(0, 0.2, 35), Vector3(-35, 0.2, 35), Vector3(-35, 0.2, 0)
+		Vector3(-35, TRANSPORT_YER_SATHI, -35), Vector3(0, TRANSPORT_YER_SATHI, -35), Vector3(35, TRANSPORT_YER_SATHI, -35), Vector3(35, TRANSPORT_YER_SATHI, 0),
+		Vector3(35, TRANSPORT_YER_SATHI, 35), Vector3(0, TRANSPORT_YER_SATHI, 35), Vector3(-35, TRANSPORT_YER_SATHI, 35), Vector3(-35, TRANSPORT_YER_SATHI, 0)
 	]
 	var ranglar := [Color("6f2427"), Color("8a6926"), Color("a5a49e"), Color("285c40"), Color("48345f"), Color("824127"), Color("243f65"), Color("20252a"), Color("85837e"), Color("4c171b")]
 	for i in range(16):
@@ -1006,7 +1026,7 @@ func _yangi_oyin() -> void:
 	oyinchi.global_position = Vector3(-7, 0.2, -4)
 	oyinchi.rotation = Vector3.ZERO
 	oyinchi.inventar_qoy(["musht"], "musht")
-	topshiriq_transporti.global_position = Vector3(-12, 0.2, 2)
+	topshiriq_transporti.global_position = Vector3(-12, TRANSPORT_YER_SATHI, 2)
 	topshiriq_transporti.rotation.y = PI / 2.0
 	topshiriq_transporti.joriy_tezlik = 0.0
 	topshiriq_transporti.tiklash()
@@ -1343,7 +1363,7 @@ func _self_test() -> void:
 		xatolar.append("Personaj yoki uchinchi shaxs kamerasi yaratilmagan")
 	elif oyinchi.oyoq_pivotlari.size() != 2 or oyinchi.qol_pivotlari.size() != 2:
 		xatolar.append("Personajning bo‘g‘inli 3D modeli yaratilmagan")
-	if get_tree().get_nodes_in_group("transport").size() != 1:
+	if get_tree().get_nodes_in_group("transport").size() != 17:
 		xatolar.append("Boshqariladigan transport soni noto‘g‘ri")
 	if get_tree().get_nodes_in_group("trafik").size() != 16:
 		xatolar.append("Trafik soni noto‘g‘ri")
@@ -1361,6 +1381,13 @@ func _self_test() -> void:
 		xatolar.append("Interaktiv do‘konlar yaratilmagan")
 	if get_tree().get_nodes_in_group("dunyo_chegarasi").size() != 4:
 		xatolar.append("Ko‘rinmas xarita chegaralari yaratilmagan")
+	var yol_chetidagi_obyektlar := get_tree().get_nodes_in_group("yol_chetidagi_obyekt")
+	if yol_chetidagi_obyektlar.size() != 71:
+		xatolar.append("Yo‘l chetidagi obyektlar to‘liq yaratilmagan")
+	for obyekt in yol_chetidagi_obyektlar:
+		if _yol_ustidami(obyekt.global_position, 0.70):
+			xatolar.append("Ko‘cha jihozi yo‘l ustiga tushib qolgan: %s" % obyekt.name)
+			break
 	if topshiriq.get("stages", []).size() != 4:
 		xatolar.append("Topshiriq bosqichlari yuklanmadi")
 	if not is_instance_valid(hud_yozuvi) or not is_instance_valid(topshiriq_yozuvi) or not is_instance_valid(minimap):
@@ -1413,12 +1440,42 @@ func _self_test() -> void:
 	topshiriq_transporti.zarar_ol(9999)
 	if topshiriq_transporti.mustahkamlik != topshiriq_transporti.maksimal_mustahkamlik or topshiriq_transporti.vayron:
 		xatolar.append("Boshqariladigan transport buzilmas holatda qolmadi")
-	if int(round(topshiriq_transporti.maksimal_tezlik * 3.6)) != 151:
+	if int(round(topshiriq_transporti.maksimal_tezlik * 3.6)) != 270:
 		xatolar.append("Tezkor transport sozlamasi noto‘g‘ri")
-	if topshiriq_transporti.salon_zarari_hisobla(12) != 0 or topshiriq_transporti.salon_zarari_hisobla(80) > 12:
-		xatolar.append("Salon himoyasi to‘qnashuv zararini to‘g‘ri cheklamadi")
+	topshiriq_transporti.joriy_tezlik = 18.0
+	topshiriq_transporti.boshqaruv_tezligini_yangila(0.0, false, 1.0)
+	if not is_equal_approx(topshiriq_transporti.joriy_tezlik, 18.0):
+		xatolar.append("Gaz qo‘yib yuborilganda transport tezligi saqlanmadi")
+	topshiriq_transporti.boshqaruv_tezligini_yangila(1.0, false, 0.5)
+	if topshiriq_transporti.joriy_tezlik <= 18.0:
+		xatolar.append("Gaz bosilganda transport tezligi oshmadi")
+	topshiriq_transporti.boshqaruv_tezligini_yangila(-1.0, false, 0.5)
+	if topshiriq_transporti.joriy_tezlik >= 26.25:
+		xatolar.append("Tormoz bosilganda transport tezligi kamaymadi")
+	topshiriq_transporti.joriy_tezlik = 0.0
+	if topshiriq_transporti.salon_zarari_hisobla(12) != 0 or topshiriq_transporti.salon_zarari_hisobla(999) != 0:
+		xatolar.append("Transport ichida o‘yinchi joni himoyalanmadi")
 	var sinov_trafik = get_tree().get_first_node_in_group("trafik")
 	if is_instance_valid(sinov_trafik):
+		if not sinov_trafik.has_method("kirish") or not sinov_trafik.has_method("chiqish"):
+			xatolar.append("Trafik avtomobilini egallash interfeysi yo‘q")
+		else:
+			var eski_joy: Vector3 = sinov_trafik.global_position
+			sinov_trafik.global_position = Vector3(12, TRANSPORT_YER_SATHI, 12)
+			oyinchi.global_position = Vector3(10, 0.2, 12)
+			sinov_trafik.kirish(oyinchi)
+			if not sinov_trafik.boshqarilmoqda or oyinchi.joriy_transport != sinov_trafik:
+				xatolar.append("Trafik avtomobilini egallab bo‘lmadi")
+			sinov_trafik.joriy_tezlik = 0.0
+			sinov_trafik.chiqish(true)
+			if sinov_trafik.boshqarilmoqda or is_instance_valid(oyinchi.joriy_transport):
+				xatolar.append("Egallangan trafik avtomobilidan tushib bo‘lmadi")
+			sinov_trafik.global_position = eski_joy
+		sinov_trafik.global_position.y = 4.0
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		if absf(sinov_trafik.global_position.y - TRANSPORT_YER_SATHI) > 0.01 or absf(sinov_trafik.rotation.x) > 0.01 or absf(sinov_trafik.rotation.z) > 0.01:
+			xatolar.append("Trafik avtomobili yer sathiga qaytmadi")
 		sinov_trafik.zarar_ol(999)
 		if not sinov_trafik.vayron or sinov_trafik.tiklanish_vaqti <= 0.0:
 			xatolar.append("Trafik avtomobilining avtomatik tiklanishi boshlanmadi")
@@ -1467,7 +1524,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9 tun=doimiy chiroq=40 fara=17 transport=tezkor+buzilmas trafik=16 piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_himoyasi=OK pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+coast trafik=16+egallanadi parvoz=yoq piyoda=44 svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
 		await get_tree().process_frame
 		get_tree().quit(0)
 	else:

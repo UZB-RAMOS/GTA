@@ -27,7 +27,7 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 
 | Tugma | Amal |
 |---|---|
-| `WASD` yoki strelkalar | Yurish yoki transportni boshqarish |
+| `WASD` yoki strelkalar | Yurish yoki transportni boshqarish; `W` tezlashtiradi, `S` tormozlaydi |
 | `Shift` | Yugurish |
 | `C` yoki `Ctrl` | O‘tirish va o‘tirgan holda sekin yurish |
 | `Space` | Sakrash; transportda qo‘l tormozi |
@@ -35,7 +35,7 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 | Sichqon chap tugmasi | Musht yoki tanlangan yaqin jang quroli bilan urish |
 | `1`, `2`, `3` | Musht, metall tayoq yoki elektroshokerni tanlash |
 | `I` | Inventarni ochish yoki yopish |
-| `E` | Transportga kirish/chiqish yoki yaqin do‘konni ochish |
+| `E` | JMJ sedani yoki yaqin trafik mashinasiga kirish/chiqish; yaqin do‘konni ochish |
 | `F5` | O‘yinni saqlash |
 | `F9` | Saqlangan o‘yinni yuklash |
 | `Esc` | Pause menyusi |
@@ -44,19 +44,21 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 
 - kirish menyusining pastki qismida `by JMJ gems` brend yozuvi;
 - 210 × 210 o‘lchamli, 9 ta 70 × 70 mantiqiy chunkka bo‘lingan procedural original shahar;
-- 5 × 5 chorraha tarmog‘i, uzun yo‘llar, batafsil fasadlar, piyodalar yo‘laklari, bozor, bekatlar, skameykalar, ko‘cha chiroqlari va daraxtlar;
+- 5 × 5 chorraha tarmog‘i, uzun va jihozlardan tozalangan yo‘llar, batafsil fasadlar, piyodalar yo‘laklari, bozor, trotuardagi bekatlar, skameykalar, ko‘cha chiroqlari va daraxtlar;
 - doimiy tungi muhit, yoniq bino derazalari, 40 ta real yoritadigan ko‘cha fonari va 17 ta avtomobil farasi;
 - yuz, quloq, ko‘z, qosh, burun, kiyim detallari, nafas va bosh harakatlariga ega bo‘g‘inli original 3D personajlar;
 - tayyorlanish, zarba va tiklanish bosqichlariga ega gavda bilan bajariladigan yaxshilangan urish animatsiyasi;
 - salon, eshik, ikki qavatli panjara, tor faralar, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan original JMJ shahar sedani;
-- boshqariladigan JMJ sedani uchun `151 km/soat` maksimal tezlik, kuchliroq tezlanish va tormoz hamda buzilmas kuzov; trafik avtomobillari odatdagi zarar tizimida qoladi;
+- boshqariladigan JMJ sedani uchun `270 km/soat` maksimal tezlik, kuchli tezlanish va tormoz hamda buzilmas kuzov;
+- gaz qo‘yib yuborilganda tezlikni saqlaydigan erkin yurish: mashina faqat `S` yoki `Space` bilan tormozlanadi;
 - Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
 - transportga kirish/chiqish animatsiyasi, devor ichiga tushirmaydigan xavfsiz chiqish nuqtasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
-- svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan va zarardan keyin avtomatik tiklanadigan 16 ta batafsil trafik avtomobili;
+- svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan, zarardan keyin avtomatik tiklanadigan va o‘yinchi `E` bilan egallashi mumkin bo‘lgan 16 ta batafsil trafik avtomobili;
+- barcha avtomobillarni tekis yo‘l sathida ushlab turadigan parvozga qarshi barqarorlashtirish;
 - turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC;
 - 100 ta ishlaydigan svetofor va xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
 - tezlikka bog‘liq muvozanatli urilish zarari, bir zarbaning qayta-qayta hisoblanishidan himoya, buzilmas boshqariladigan avtomobil, o‘yinchi joni va himoya zirhi;
-- oddiy urilishlarda haydovchini himoyalaydigan kamar/kuzov modeli; faqat juda kuchli avariya 1–12 oralig‘ida salon zarari beradi;
+- o‘yinchi transport ichida bo‘lganida har qanday to‘qnashuvdan jonini to‘liq himoyalaydigan salon modeli;
 - NPC joni tugaganda tushadigan yig‘ib olinadigan pul modeli;
 - uchta interaktiv do‘kon: dori, zirh, metall tayoq va elektroshoker;
 - musht hamda kaftga to‘g‘ri biriktirilgan 3D metall tayoq va elektroshoker, ekrandagi inventar va qurol tanlash;
