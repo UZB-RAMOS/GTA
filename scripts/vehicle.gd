@@ -1,6 +1,7 @@
 extends CharacterBody3D
 
 const YOL_SATHI := -0.10
+const VehicleExitHelper = preload("res://scripts/vehicle_exit_helper.gd")
 
 signal haydovchi_kirdi
 signal haydovchi_chiqdi
@@ -35,6 +36,11 @@ func _ready() -> void:
 	add_to_group("transport")
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4 | 8
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	floor_snap_length = 0.45
+	floor_stop_on_slope = true
+	safe_margin = 0.04
 	_yarat_kuzov()
 	tiklash_timeri = Timer.new()
 	tiklash_timeri.name = "AvtomatikTamir"
@@ -302,26 +308,7 @@ func chiqish() -> void:
 	haydovchi_chiqdi.emit()
 
 func _xavfsiz_chiqish_nuqtasi() -> Dictionary:
-	var yon := global_transform.basis.x.normalized()
-	var old := -global_transform.basis.z.normalized()
-	var nomzodlar := [
-		global_position - yon * 2.05 + Vector3.UP * 0.18,
-		global_position + yon * 2.05 + Vector3.UP * 0.18,
-		global_position - old * 2.45 + Vector3.UP * 0.18,
-		global_position + old * 2.45 + Vector3.UP * 0.18
-	]
-	var shakl := CapsuleShape3D.new()
-	shakl.radius = 0.42
-	shakl.height = 1.80
-	for nomzod in nomzodlar:
-		var sorov := PhysicsShapeQueryParameters3D.new()
-		sorov.shape = shakl
-		sorov.transform = Transform3D(Basis.IDENTITY, nomzod + Vector3.UP * 0.92)
-		sorov.collision_mask = 1 | 4 | 8
-		sorov.exclude = [get_rid(), haydovchi.get_rid()]
-		if get_world_3d().direct_space_state.intersect_shape(sorov, 1).is_empty():
-			return {"joy": nomzod}
-	return {}
+	return VehicleExitHelper.xavfsiz_nuqta_topish(self, haydovchi, 2.05, 2.45)
 
 func _eshik_animatsiyasi(_kirishmi: bool) -> void:
 	if not is_instance_valid(eshik_pivot):

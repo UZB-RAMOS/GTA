@@ -33,6 +33,8 @@ var harakat_vaqti := 0.0
 var otiribdi := false
 var kamera_erkin_vaqt := 0.0
 var kamera_yaw_offset := 0.0
+var kamera_maqsad_yaw := 0.0
+var kamera_maqsad_pitch := deg_to_rad(-12.0)
 var inventar: Array[String] = ["musht"]
 var faol_qurol := "musht"
 var qurol_modellari: Dictionary = {}
@@ -50,8 +52,16 @@ func _ready() -> void:
 	add_to_group("oyinchi")
 	collision_layer = 2
 	collision_mask = 1 | 4 | 8
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	floor_snap_length = 0.42
+	floor_max_angle = deg_to_rad(50.0)
+	floor_stop_on_slope = true
+	safe_margin = 0.035
 	_yarat_tana()
 	_yarat_kamera()
+	kamera_maqsad_yaw = rotation.y
+	kamera_pivot.rotation.x = kamera_maqsad_pitch
 
 func _yarat_tana() -> void:
 	vizual_root = Node3D.new()
@@ -126,7 +136,7 @@ func _yarat_kamera() -> void:
 	prujina.name = "KameraMasofa"
 	prujina.spring_length = 6.4
 	prujina.margin = 0.24
-	prujina.collision_mask = 1
+	prujina.collision_mask = 1 | 4
 	kamera_pivot.add_child(prujina)
 	kamera = Camera3D.new()
 	kamera.name = "AsosiyKamera"
@@ -137,12 +147,12 @@ func _yarat_kamera() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if faol:
-			rotate_y(-event.relative.x * sichqon_sezgirligi)
+			kamera_maqsad_yaw -= event.relative.x * sichqon_sezgirligi
 		else:
 			kamera_yaw_offset = clampf(kamera_yaw_offset - event.relative.x * sichqon_sezgirligi, -PI * 0.72, PI * 0.72)
 			kamera_erkin_vaqt = 1.15
-		kamera_pivot.rotation.x = clamp(
-			kamera_pivot.rotation.x - event.relative.y * sichqon_sezgirligi,
+		kamera_maqsad_pitch = clampf(
+			kamera_maqsad_pitch - event.relative.y * sichqon_sezgirligi,
 			deg_to_rad(-52.0), deg_to_rad(28.0)
 		)
 	if event.is_action_pressed("ozaro"):
@@ -174,7 +184,8 @@ func _physics_process(delta: float) -> void:
 		_transport_kamerasi(delta)
 		return
 
-	otiribdi = Input.is_action_pressed("otirish") and is_on_floor()
+	_piyoda_kamerasini_yangila(delta)
+	_otirishni_yangila()
 	_otirish_holati(delta)
 	if not is_on_floor():
 		velocity.y -= gravitatsiya * delta
@@ -200,11 +211,35 @@ func _transport_kamerasi(delta: float) -> void:
 	kamera_erkin_vaqt = maxf(0.0, kamera_erkin_vaqt - delta)
 	if kamera_erkin_vaqt <= 0.0:
 		kamera_yaw_offset = lerp_angle(kamera_yaw_offset, 0.0, clampf(delta * 2.7, 0.0, 1.0))
-		kamera_pivot.rotation.x = lerp_angle(kamera_pivot.rotation.x, deg_to_rad(-13.0), clampf(delta * 2.2, 0.0, 1.0))
+		kamera_maqsad_pitch = lerp_angle(kamera_maqsad_pitch, deg_to_rad(-13.0), clampf(delta * 2.2, 0.0, 1.0))
+	kamera_pivot.rotation.x = lerp_angle(kamera_pivot.rotation.x, kamera_maqsad_pitch, clampf(delta * 14.0, 0.0, 1.0))
 	rotation.y = joriy_transport.rotation.y + kamera_yaw_offset
 	var nisbat: float = clampf(abs(joriy_transport.joriy_tezlik) / maxf(joriy_transport.maksimal_tezlik, 0.1), 0.0, 1.0)
 	prujina.spring_length = lerpf(prujina.spring_length, 6.8 + nisbat * 1.7, clampf(delta * 3.5, 0.0, 1.0))
 	kamera.fov = lerpf(kamera.fov, 68.0 + nisbat * 8.0, clampf(delta * 3.0, 0.0, 1.0))
+
+func _piyoda_kamerasini_yangila(delta: float) -> void:
+	rotation.y = lerp_angle(rotation.y, kamera_maqsad_yaw, clampf(delta * 18.0, 0.0, 1.0))
+	kamera_pivot.rotation.x = lerp_angle(kamera_pivot.rotation.x, kamera_maqsad_pitch, clampf(delta * 18.0, 0.0, 1.0))
+
+func _otirishni_yangila() -> void:
+	if Input.is_action_pressed("otirish"):
+		otiribdi = true
+	elif otiribdi and _turishga_joy_bormi():
+		otiribdi = false
+
+func _turishga_joy_bormi() -> bool:
+	if not is_inside_tree() or not is_instance_valid(collider):
+		return true
+	var tik_tana := CapsuleShape3D.new()
+	tik_tana.radius = 0.39
+	tik_tana.height = 1.80
+	var sorov := PhysicsShapeQueryParameters3D.new()
+	sorov.shape = tik_tana
+	sorov.transform = Transform3D(global_transform.basis, global_position + Vector3.UP * 0.92)
+	sorov.collision_mask = collision_mask
+	sorov.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(sorov, 1).is_empty()
 
 func _otirish_holati(delta: float) -> void:
 	var maqsad_y := -0.38 if otiribdi else 0.0
@@ -392,16 +427,21 @@ func transportga_otir(transport: CharacterBody3D) -> void:
 	collider.disabled = true
 	kamera_yaw_offset = 0.0
 	kamera_erkin_vaqt = 0.0
+	kamera_maqsad_pitch = kamera_pivot.rotation.x
+	prujina.clear_excluded_objects()
+	prujina.add_excluded_object(transport.get_rid())
 	transportga_kirdi.emit(transport)
 
 func transportdan_tush(chiqish_nuqta: Vector3, transport_burilishi := 0.0) -> void:
 	global_position = chiqish_nuqta
 	rotation.y = transport_burilishi
+	kamera_maqsad_yaw = transport_burilishi
 	faol = true
 	joriy_transport = null
 	vizual_root.visible = true
 	qurol_holatini_yangila()
 	prujina.spring_length = 6.4
+	prujina.clear_excluded_objects()
 	kamera.fov = 68.0
 	set_deferred("collision_layer", 2)
 	collider.set_deferred("disabled", false)
@@ -415,6 +455,7 @@ func holat_qoy(data: Dictionary) -> void:
 		var p: Array = data.position
 		global_position = Vector3(float(p[0]), float(p[1]), float(p[2]))
 	rotation.y = float(data.get("rotation_y", 0.0))
+	kamera_maqsad_yaw = rotation.y
 
 func _material(rang: Color, roughness := 0.82) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

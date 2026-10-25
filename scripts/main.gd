@@ -1363,6 +1363,27 @@ func _self_test() -> void:
 		xatolar.append("Personaj yoki uchinchi shaxs kamerasi yaratilmagan")
 	elif oyinchi.oyoq_pivotlari.size() != 2 or oyinchi.qol_pivotlari.size() != 2:
 		xatolar.append("Personajning bo‘g‘inli 3D modeli yaratilmagan")
+	elif oyinchi.floor_snap_length < 0.4 or oyinchi.prujina.collision_mask != (1 | 4):
+		xatolar.append("Personajning notekis sath yoki kamera to‘qnashuv sozlamasi ishlamadi")
+	else:
+		var bosh_tosigi := StaticBody3D.new()
+		bosh_tosigi.name = "SelfTestBoshTosigi"
+		bosh_tosigi.collision_layer = 1
+		bosh_tosigi.collision_mask = 0
+		var bosh_tosigi_collider := CollisionShape3D.new()
+		var bosh_tosigi_shakli := BoxShape3D.new()
+		bosh_tosigi_shakli.size = Vector3(1.4, 0.22, 1.4)
+		bosh_tosigi_collider.shape = bosh_tosigi_shakli
+		bosh_tosigi.add_child(bosh_tosigi_collider)
+		add_child(bosh_tosigi)
+		bosh_tosigi.global_position = oyinchi.global_position + Vector3.UP * 1.62
+		await get_tree().physics_frame
+		if oyinchi._turishga_joy_bormi():
+			xatolar.append("Past shift ostida personajning xavfsiz turish tekshiruvi ishlamadi")
+		bosh_tosigi.free()
+		await get_tree().physics_frame
+		if not oyinchi._turishga_joy_bormi():
+			xatolar.append("To‘siq olingach personaj tik tura olmadi")
 	if get_tree().get_nodes_in_group("transport").size() != 17:
 		xatolar.append("Boshqariladigan transport soni noto‘g‘ri")
 	if get_tree().get_nodes_in_group("trafik").size() != 16:
@@ -1518,6 +1539,9 @@ func _self_test() -> void:
 		xatolar.append("Transportga kirish bosqichi ishlamadi")
 	if not topshiriq_transporti.haydovchi_modeli.visible:
 		xatolar.append("Transport ichidagi haydovchi modeli ko‘rinmadi")
+	var xavfsiz_chiqish: Dictionary = topshiriq_transporti._xavfsiz_chiqish_nuqtasi()
+	if xavfsiz_chiqish.is_empty() or not xavfsiz_chiqish.has("yer_normali"):
+		xatolar.append("Transportdan chiqish uchun yerga tayangan xavfsiz nuqta topilmadi")
 	if abs(angle_difference(oyinchi.rotation.y, topshiriq_transporti.rotation.y)) > 0.08:
 		xatolar.append("Transport kamerasi avtomatik old tomonga burilmadi")
 
@@ -1536,7 +1560,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash trafik=16+egallanadi parvoz=yoq piyoda=44+zarba_uchishi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=avto_old mission=4 save_v2=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+egallanadi parvoz=yoq piyoda=44+zarba_uchishi+past_shift_himoyasi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=silliq+avto_old+collision mission=4 save_v2=OK")
 		await get_tree().process_frame
 		get_tree().quit(0)
 	else:
