@@ -24,6 +24,15 @@ var zarba_vaqti := 0.0
 var zarba_tezligi := Vector3.ZERO
 var zarba_vertikal_tezligi := 0.0
 var zarba_gravitatsiyasi := 18.0
+var oxirgi_suhbat_vaqti := -10000
+
+const SUHBATLAR := [
+	"Assalomu alaykum! Tungi Toshkent juda chiroyli, ehtiyot bo‘lib yuring.",
+	"Mahalla bozori Chorsu tomonda, yashil yozuvni kuzating.",
+	"M bilan katta xaritani ochishingiz mumkin.",
+	"Yomg‘ir boshlansa, nam yo‘lda mashinani sekinroq boshqaring.",
+	"Tashkent City tomondagi tungi chiroqlarni ko‘rdingizmi?"
+]
 
 func _ready() -> void:
 	add_to_group("piyoda")
@@ -165,6 +174,21 @@ func oyoqqlar_soni() -> int:
 
 func _yangi_maqsad() -> void:
 	maqsad = markaz + Vector3(rng.randf_range(-radius, radius), 0, rng.randf_range(-radius, radius))
+
+func suhbat(oyinchi: Node3D) -> void:
+	if olgan or not is_instance_valid(oyinchi):
+		return
+	var hozir := Time.get_ticks_msec()
+	if hozir - oxirgi_suhbat_vaqti < 1400:
+		return
+	oxirgi_suhbat_vaqti = hozir
+	kutish_vaqti = maxf(kutish_vaqti, 2.8)
+	var yonalish := oyinchi.global_position - global_position
+	yonalish.y = 0.0
+	if yonalish.length_squared() > 0.01:
+		rotation.y = atan2(-yonalish.x, -yonalish.z)
+	var indeks := posmod(name.hash() + int(hozir / 5000), SUHBATLAR.size())
+	get_tree().call_group("oyin_tizimi", "npc_xabari", SUHBATLAR[indeks])
 
 func zarar_ol(miqdor: int, manba = null) -> void:
 	if olgan or miqdor <= 0 or zarar_immun_vaqti > 0.0:

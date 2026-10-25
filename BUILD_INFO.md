@@ -1,22 +1,24 @@
 # Build ma’lumoti
 
 - Mahsulot: `Toshkent Sarguzashti`
-- Versiya: `0.5.0 PHASE 1 — silliq kamera va xavfsiz harakat`
+- Versiya: `0.6.0 PHASE 2 — Toshkent hududlari, ob-havo, missiyalar va to‘liq xarita`
 - Platforma: `Windows x86_64`
 - Engine: `Godot 4.7.2 stable`
 - Renderer: `OpenGL 3.3 Compatibility`
 - Asosiy o‘lcham: `1280 × 720`
 - Mobil build: `yo‘q, foydalanuvchi talabiga ko‘ra`
-- Build vaqti: `2026-10-25 13:41:57` (Asia/Tashkent)
-- `.exe` hajmi: `109 245 648 bayt`
-- SHA-256: `F2C34E7A27B0D045478D03547A8EB42667871DD1FA6840FDD31BE0EBCAF60AAE`
+- Build vaqti: `2026-10-26 01:27:40` (Asia/Tashkent)
+- `.exe` hajmi: `114 103 872 bayt`
+- SHA-256: `FB2DAFEDBD0BF98E2794FC3CE963726BE2431BDDA6A8D5F6A81ED82AE29C7A3C`
 - Manba self-test: `exit 0`
 - Eksport qilingan build self-test: `exit 0`
 - Kirish menyusi: `by JMJ gems` yozuvi real OpenGL screenshot’da tekshirildi
 - Tungi shahar: 40 ta ko‘cha yoritgichi va 17 ta avtomobil farasi real OpenGL’da tekshirildi
 - Avtomobil preview’i: `screenshots/preview_vehicle.png`
 - Metall tayoq: o‘ng kaftdagi 3D model `screenshots/preview.png` orqali tekshirildi
-- Bir xil yashirin OpenGL benchmark sharoitida: eski `0.4.4 = 15.1 FPS`, yangi `0.5.0 = 15.6 FPS`; regressiya kuzatilmadi
+- `0.6.0` standalone real AMD OpenGL benchmark: `25.9 FPS`, `582 draw call`, `830 obyekt`, `57 544 primitive`, `9.64 ms physics`, `25.54 ms process`
+- Yangi tizimlar: 9 chunk streaming, 8 landmark, 5 ob-havo rejimi, wet-road, uchta missiya, to‘liq xarita, grafik/ekran sozlamalari va procedural audio
+- Original rasm assetlari: `assets/textures/asphalt_wet_original.png` va `assets/textures/toshkent_facade_night_original.png`
 - Qotish tuzatishi: `MultiMesh`, LOD, keshlangan trafik sezgisi, davriy svetofor/HUD/minimap yangilanishi va yaqin yoritish
 - Boshqariladigan JMJ avtomobili: `270 km/soat`, tezlanish `16.5 m/s²`, tormoz `28.0 m/s²`, kuzov `BUZILMAS`
 - Erkin yurish: gaz qo‘yib yuborilganda avtomobil `1.35 m/s²` qarshilik bilan asta-sekin sekinlashadi; `S` yoki `Space` tez tormozlaydi
@@ -28,12 +30,12 @@
 - Kamera: silliq yaw/pitch, transport collision va boshqarilayotgan avtomobil uchun istisno
 - Transportdan tushish: yer, qiyalik va to‘liq kapsula bo‘shlig‘i tekshiriladi
 
-Yashirin/fokusdan tashqari oynadagi FPS odatiy o‘yin oynasidagi maksimal natija emas. Ushbu raqamlar faqat PHASE 1 regressiyasini bir xil sharoitda tekshirish uchun berilgan.
+FPS kafolat emas: qurilma, drayver, grafik preset va sahnadagi kamera holatiga qarab o‘zgaradi. LOW preset integratsiyalashgan grafikaga mo‘ljallangan.
 
-Windows sandbox standart `Temp` katalogiga yozishni rad etganda Godot `project.binary` faylini buzilgan holda eksport qilishi mumkin. `0.5.0` build yozish huquqi bor alohida `TEMP/TMP` katalogi bilan qayta eksport qilindi va standalone self-test orqali tasdiqlandi.
+Windows sandbox standart `Temp` katalogiga yozishni rad etganda Godot `project.binary` faylini buzilgan holda eksport qilishi mumkin. `0.6.0` build yozish huquqi bor alohida `TEMP/TMP` katalogi bilan eksport qilindi va standalone self-test orqali tasdiqlandi.
 
 Godot loyiha self-test natijasi:
 
 ```text
-SELF_TEST_OK: dunyo=210x210 chunk=9 yol=toza tun=doimiy chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+egallanadi parvoz=yoq piyoda=44+zarba_uchishi+past_shift_himoyasi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich avto_tiklash=OK optimizatsiya=LOD+kesh kamera=silliq+avto_old+collision mission=4 save_v2=OK
+SELF_TEST_OK: dunyo=210x210 chunk=9+streaming landmark=8 tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+egallanadi parvoz=yoq piyoda=44+suhbat+zarba_uchishi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+kesh kamera=silliq+avto_old+collision missiya=3 xarita=mini+toliq sozlama=grafika+ekran intro=JMJ save_v3=OK
 ```

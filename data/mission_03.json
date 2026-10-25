@@ -1,0 +1,30 @@
+{
+  "id": "toshkent_bilan_tanishuv_03",
+  "title": "Toshkent bilan tanishuv",
+  "stages": [
+    {
+      "id": "chorsu",
+      "type": "reach_area",
+      "text": "Chorsu uslubidagi Mahalla bozoriga boring",
+      "target": [-20.0, 0.2, -18.0]
+    },
+    {
+      "id": "sergeli",
+      "type": "reach_area",
+      "text": "Sergeli servis hududiga boring",
+      "target": [-52.0, 0.2, -52.0]
+    },
+    {
+      "id": "yunusobod",
+      "type": "reach_area",
+      "text": "Yunusobod teleminora maydoniga boring",
+      "target": [86.0, 0.2, -52.0]
+    },
+    {
+      "id": "complete",
+      "type": "complete",
+      "text": "Shahar sayohati bajarildi! Mukofot: 35 000 so‘m",
+      "reward": 35000
+    }
+  ]
+}

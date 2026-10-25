@@ -314,6 +314,16 @@ func _transport_qidir() -> void:
 			yaqin_dokon = dokon
 	if yaqin_dokon:
 		yaqin_dokon.ochish(self)
+		return
+	var yaqin_piyoda: Node3D
+	eng_masofa = 3.2
+	for piyoda in get_tree().get_nodes_in_group("piyoda"):
+		var masofa := global_position.distance_to(piyoda.global_position)
+		if masofa < eng_masofa and piyoda.has_method("suhbat"):
+			eng_masofa = masofa
+			yaqin_piyoda = piyoda
+	if yaqin_piyoda:
+		yaqin_piyoda.suhbat(self)
 
 func _hujum() -> void:
 	if hujum_sovush_vaqti > 0.0 or not QUROLLAR.has(faol_qurol):

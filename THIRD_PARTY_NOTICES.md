@@ -12,4 +12,6 @@ Godot litsenziyasi loyiha muallifini Godot nomidan foydalanishga majbur qilmaydi
 
 ## Aktivlar
 
-Joriy MVP tashqi 3D model, tekstura, musiqa, shrift yoki GTA aktivlarini o‘z ichiga olmaydi. Geometriya, rangli materiallar, UI va shahar Godot ichida procedural tarzda yaratiladi.
+Joriy MVP tashqi 3D model, musiqa, shrift yoki GTA aktivlarini o‘z ichiga olmaydi. Geometriya, UI va shaharning asosiy tuzilishi Godot ichida procedural tarzda yaratiladi.
+
+`assets/textures/asphalt_wet_original.png` va `assets/textures/toshkent_facade_night_original.png` ushbu loyiha uchun OpenAI `imagegen` vositasi yordamida maxsus yaratilgan original teksturalardir. Ularda GTA, Chevrolet yoki boshqa uchinchi tomon logotipi va tayyor o‘yin asseti ishlatilmagan.

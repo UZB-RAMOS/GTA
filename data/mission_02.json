@@ -1,0 +1,36 @@
+{
+  "id": "tungi_poyga_02",
+  "title": "Tungi shahar poygasi",
+  "stages": [
+    {
+      "id": "start",
+      "type": "enter_any_vehicle",
+      "text": "Istalgan avtomobilga o‘tiring",
+      "target": [18.0, 0.2, 18.0]
+    },
+    {
+      "id": "checkpoint_1",
+      "type": "reach_area_any_vehicle",
+      "text": "Chilonzor nazorat nuqtasiga boring",
+      "target": [-52.0, 0.2, 53.0]
+    },
+    {
+      "id": "checkpoint_2",
+      "type": "reach_area_any_vehicle",
+      "text": "Tashkent City nazorat nuqtasiga boring",
+      "target": [52.0, 0.2, 52.0]
+    },
+    {
+      "id": "finish",
+      "type": "reach_area_any_vehicle",
+      "text": "Markazdagi marra chizig‘iga yeting",
+      "target": [18.0, 0.2, -52.0]
+    },
+    {
+      "id": "complete",
+      "type": "complete",
+      "text": "Tungi poyga bajarildi! Mukofot: 40 000 so‘m",
+      "reward": 40000
+    }
+  ]
+}
