@@ -7,9 +7,10 @@
 - Renderer: `OpenGL 3.3 Compatibility`
 - Asosiy o‘lcham: `1280 × 720`
 - Mobil build: `yo‘q, foydalanuvchi talabiga ko‘ra`
-- Build vaqti: `2026-10-26 01:27:40` (Asia/Tashkent)
-- `.exe` hajmi: `114 103 872 bayt`
-- SHA-256: `FB2DAFEDBD0BF98E2794FC3CE963726BE2431BDDA6A8D5F6A81ED82AE29C7A3C`
+- Build vaqti: `2026-10-26 02:02:34` (Asia/Tashkent)
+- `.exe` hajmi: `113 986 416 bayt`
+- SHA-256: `CCB0FCD90D3EE1E42920BF28BB698E2B9AA984B33A6DDF8AECACD2AFF4CBE333`
+- Eksport template: rasmiy `Godot 4.7.2 stable Windows x86_64 release`
 - Manba self-test: `exit 0`
 - Eksport qilingan build self-test: `exit 0`
 - Kirish menyusi: `by JMJ gems` yozuvi real OpenGL screenshot’da tekshirildi
