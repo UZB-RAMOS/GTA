@@ -19,7 +19,7 @@
 - Mustaqillik maydoni, Minor, tungi sayilgoh, vokzal va metro landmarklari;
 - 30/45/60/120 FPS chegarasi va LOW/MEDIUM/HIGH rejimida NPC, trafik hamda yorug‘lik yukini real kamaytirish;
 - o‘zbek, rus va ingliz tillarini qabul qiladigan localization arxitekturasi;
-- `schema_version: 4`, oldingi schema 1–3 bilan moslik va buzilgan asosiy save uchun zaxira fallback;
+- `schema_version: 4`, oldingi schema 1–3 bilan moslik, buzilgan asosiy save uchun zaxira fallback hamda resolution/fullscreen/VSync holatini saqlash;
 - eshik va missiya uchun original procedural audio signallari;
 - xarita chetidagi ko‘rinmas to‘siqlarga mos ko‘rinadigan qurilish chegaralari.
 

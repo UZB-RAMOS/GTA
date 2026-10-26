@@ -92,6 +92,9 @@ var missiya_muvaffaqiyatsiz := false
 var npc_suhbat_soni := 0
 var oyin_vaqti := 0.0
 var fps_chegarasi := 60
+var rezolyutsiya_indeksi := 0
+var fullscreen_yoqilgan := false
+var vsync_yoqilgan := true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -1406,6 +1409,18 @@ func _sozlamalar_oynasi_yarat(canvas: CanvasLayer) -> void:
 
 func _sozlamalarni_och(asosiydan: bool) -> void:
 	sozlama_asosiy_menyudan = asosiydan
+	var rezolyutsiya_tanlash := sozlamalar_qatlami.find_child("RezolyutsiyaTanlash", true, false) as OptionButton
+	var fullscreen_tanlash := sozlamalar_qatlami.find_child("FullscreenTanlash", true, false) as CheckButton
+	var vsync_tanlash := sozlamalar_qatlami.find_child("VSyncTanlash", true, false) as CheckButton
+	var fps_tanlash := sozlamalar_qatlami.find_child("FPSChegarasi", true, false) as OptionButton
+	if is_instance_valid(rezolyutsiya_tanlash):
+		rezolyutsiya_tanlash.select(rezolyutsiya_indeksi)
+	if is_instance_valid(fullscreen_tanlash):
+		fullscreen_tanlash.set_pressed_no_signal(fullscreen_yoqilgan)
+	if is_instance_valid(vsync_tanlash):
+		vsync_tanlash.set_pressed_no_signal(vsync_yoqilgan)
+	if is_instance_valid(fps_tanlash):
+		fps_tanlash.select([30, 45, 60, 120].find(fps_chegarasi))
 	asosiy_menyu.visible = false
 	pauza_qatlami.visible = false
 	sozlamalar_qatlami.visible = true
@@ -1461,13 +1476,16 @@ func _ob_havo_tanlandi(indeks: int) -> void:
 
 func _rezolyutsiya_tanlandi(indeks: int) -> void:
 	var olchamlar := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
+	rezolyutsiya_indeksi = clampi(indeks, 0, olchamlar.size() - 1)
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
-		DisplayServer.window_set_size(olchamlar[clampi(indeks, 0, olchamlar.size() - 1)])
+		DisplayServer.window_set_size(olchamlar[rezolyutsiya_indeksi])
 
 func _fullscreen_ozgardi(yoqilgan: bool) -> void:
+	fullscreen_yoqilgan = yoqilgan
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if yoqilgan else DisplayServer.WINDOW_MODE_WINDOWED)
 
 func _vsync_ozgardi(yoqilgan: bool) -> void:
+	vsync_yoqilgan = yoqilgan
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if yoqilgan else DisplayServer.VSYNC_DISABLED)
 
 func _fps_chegarasi_tanlandi(indeks: int) -> void:
@@ -2034,7 +2052,10 @@ func _saqlash() -> void:
 		"settings": {
 			"graphics_quality": grafika_sifati,
 			"audio_db": ovoz_db,
-			"fps_limit": fps_chegarasi
+			"fps_limit": fps_chegarasi,
+			"resolution_index": rezolyutsiya_indeksi,
+			"fullscreen": fullscreen_yoqilgan,
+			"vsync": vsync_yoqilgan
 		},
 		"vehicle": {
 			"position": [topshiriq_transporti.global_position.x, topshiriq_transporti.global_position.y, topshiriq_transporti.global_position.z],
@@ -2136,6 +2157,13 @@ func _yuklash() -> void:
 	_grafika_sifati_tanlandi(clampi(int(settings_data.get("graphics_quality", grafika_sifati)), 0, 2))
 	fps_chegarasi = clampi(int(settings_data.get("fps_limit", 60)), 30, 120)
 	Engine.max_fps = fps_chegarasi
+	rezolyutsiya_indeksi = clampi(int(settings_data.get("resolution_index", 0)), 0, 2)
+	fullscreen_yoqilgan = bool(settings_data.get("fullscreen", false))
+	vsync_yoqilgan = bool(settings_data.get("vsync", true))
+	if DisplayServer.get_name() != "headless":
+		_rezolyutsiya_tanlandi(rezolyutsiya_indeksi)
+		_fullscreen_ozgardi(fullscreen_yoqilgan)
+		_vsync_ozgardi(vsync_yoqilgan)
 	ob_havo.holat_qoy(data.get("weather", {}))
 	var transport_data: Dictionary = data.get("vehicle", {})
 	topshiriq_transporti.tiklash()
@@ -2462,7 +2490,8 @@ func _self_test() -> void:
 		xatolar.append("Save fayli yaratilmagan")
 	else:
 		var save_sinov = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-		if not save_sinov is Dictionary or int(save_sinov.get("schema_version", 0)) != 4 or not save_sinov.has("weather") or not save_sinov.has("completed_missions") or not save_sinov.has("owned_vehicles") or not save_sinov.has("general_inventory"):
+		var save_sozlamalari: Dictionary = save_sinov.get("settings", {}) if save_sinov is Dictionary else {}
+		if not save_sinov is Dictionary or int(save_sinov.get("schema_version", 0)) != 4 or not save_sinov.has("weather") or not save_sinov.has("completed_missions") or not save_sinov.has("owned_vehicles") or not save_sinov.has("general_inventory") or not save_sozlamalari.has("resolution_index") or not save_sozlamalari.has("fullscreen") or not save_sozlamalari.has("vsync"):
 			xatolar.append("Save v4 missiya, transport, inventar, ob-havo yoki sozlamalarni saqlamadi")
 		pul = 0
 		_yuklash()
