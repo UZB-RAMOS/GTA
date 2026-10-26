@@ -2,7 +2,7 @@
 
 `Toshkent Sarguzashti` — Toshkent mahallalari va keng ko‘chalaridan ilhomlangan original 3D ochiq-dunyo MVP o‘yini. Loyiha GTA kodi, xaritasi, modeli, musiqasi, logotipi yoki boshqa aktivlarini ishlatmaydi.
 
-Joriy versiya: `0.8.0 PHASE 8.0–8.1 — audit, optimizatsiya va Sharqiy xiyobon kengaytmasi`.
+Joriy versiya: `0.8.1 — 140 km/soat transport limiti va salon silueti tuzatishi`.
 
 ![O‘yin jarayoni](screenshots/preview.png)
 
@@ -20,8 +20,8 @@ Joriy versiya: `0.8.0 PHASE 8.0–8.1 — audit, optimizatsiya va Sharqiy xiyobo
 
 ## Ishga tushirish
 
-1. `builds/Toshkent_Sarguzashti_0.8.0_Windows.zip` faylini yuklab oling va alohida papkaga oching.
-2. Ichidagi `Toshkent_Sarguzashti_0.8.0.exe` faylini ishga tushiring.
+1. `builds/Toshkent_Sarguzashti_0.8.1_Windows.zip` faylini yuklab oling va alohida papkaga oching.
+2. Ichidagi `Toshkent_Sarguzashti_0.8.1.exe` faylini ishga tushiring.
 3. Asosiy menyudan **Yangi o‘yin** tugmasini bosing.
 4. Sariq topshiriq belgilarini kuzating.
 
@@ -69,7 +69,8 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - qiyalik va notekis sath uchun `floor snap`, past shift ostida xavfsiz turish tekshiruvi;
 - tayyorlanish, zarba va tiklanish bosqichlariga ega gavda bilan bajariladigan yaxshilangan urish animatsiyasi;
 - salon, eshik, ikki qavatli panjara, tor faralar, ko‘zgu, raqam va aylanuvchi g‘ildiraklarga ega boshqariladigan original JMJ shahar sedani;
-- boshqariladigan JMJ sedani uchun `270 km/soat` maksimal tezlik, kuchli tezlanish va tormoz hamda buzilmas kuzov;
+- boshqariladigan JMJ sedani va egallanadigan trafik avtomobillari uchun `140 km/soat` maksimal tezlik, kuchli tezlanish va tormoz hamda buzilmas kuzov;
+- salon ichidagi haydovchi silueti: bosh tomdan tashqariga chiqmaydi;
 - gaz qo‘yib yuborilganda tezlikni keskin yo‘qotmay, `1.35 m/s²` qarshilik bilan asta-sekin sekinlashadigan erkin yurish; `S` yoki `Space` tez tormozlaydi;
 - Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
 - transportga kirish/chiqish animatsiyasi, devor ichiga tushirmaydigan xavfsiz chiqish nuqtasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;

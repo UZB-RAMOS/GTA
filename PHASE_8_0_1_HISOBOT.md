@@ -2,7 +2,7 @@
 
 ## Qisqa natija
 
-`Toshkent Sarguzashti 0.8.0` mavjud Godot loyihasi ustida davom ettirildi. Loyiha qayta yaratilgani yo‘q, Godot va GDScript arxitekturasi saqlandi. Eski `210 × 210` hudud sharq tomonga kengayib, umumiy mantiqiy o‘lcham `278 × 208` bo‘ldi. Uchta yangi chunk, beshta yangi landmark, uzluksiz yo‘llar, yangi navigation yo‘nalishlari, svetoforlar, piyodalar va trafik integratsiya qilindi.
+`Toshkent Sarguzashti 0.8.0` mavjud Godot loyihasi ustida davom ettirildi. Loyiha qayta yaratilgani yo‘q, Godot va GDScript arxitekturasi saqlandi. Eski `210 × 210` hudud sharq tomonga kengayib, umumiy mantiqiy o‘lcham `278 × 208` bo‘ldi. Uchta yangi chunk, beshta yangi landmark, uzluksiz yo‘llar, yangi navigation yo‘nalishlari, svetoforlar, piyodalar va trafik integratsiya qilindi. `0.8.1` hotfix barcha boshqariladigan transportlarni `140 km/soat` bilan chekladi va haydovchi siluetlarini salon ichiga tushirdi.
 
 Mualliflik huquqi bilan himoyalangan GTA assetlari, Chevrolet logotiplari yoki tayyor Toshkent binolari ko‘chirilmadi. Yangi hududdagi obyektlar Godot ichida original procedural geometriya bilan qurildi.
 
@@ -62,7 +62,7 @@ Mualliflik huquqi bilan himoyalangan GTA assetlari, Chevrolet logotiplari yoki t
 | 28 | Trafik avtomobilini egallash | O‘tdi | `E` orqali driver state almashadi |
 | 29 | Transportga kirish | O‘tdi | Holat va kamera sinxronizatsiyasi |
 | 30 | Transportdan xavfsiz chiqish | O‘tdi | Yer, qiyalik va kapsula tekshiruvi |
-| 31 | 270 km/soat maksimal tezlik | O‘tdi | Vehicle konfiguratsiyasi |
+| 31 | 140 km/soat maksimal tezlik | O‘tdi | Vehicle va egallanadigan traffic konfiguratsiyasi |
 | 32 | Gaz qo‘yilganda tabiiy sekinlashish | O‘tdi | `1.35 m/s²` qarshilik |
 | 33 | Tez tormoz va qo‘l tormozi | O‘tdi | `S` va `Space` input yo‘li |
 | 34 | Buzilmas boshqariladigan transport | O‘tdi | Damage bloklanadi |

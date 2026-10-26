@@ -1,6 +1,8 @@
 extends CharacterBody3D
 
 const YOL_SATHI := -0.10
+const MAKSIMAL_TEZLIK_KMH := 140.0
+const MAKSIMAL_TEZLIK_M_S := MAKSIMAL_TEZLIK_KMH / 3.6
 const VehicleExitHelper = preload("res://scripts/vehicle_exit_helper.gd")
 
 signal haydovchi_kirdi
@@ -8,7 +10,7 @@ signal haydovchi_chiqdi
 signal mustahkamlik_ozgardi(qiymat)
 signal vayron_boldi
 
-@export var maksimal_tezlik := 75.0
+@export var maksimal_tezlik := MAKSIMAL_TEZLIK_M_S
 @export var tezlanish := 16.5
 @export var tormoz := 28.0
 @export var erkin_sekinlashish := 1.35
@@ -143,13 +145,14 @@ func _yarat_kuzov() -> void:
 func _haydovchi_yarat() -> Node3D:
 	var root := Node3D.new()
 	root.name = "KorinadiganHaydovchi"
-	root.position = Vector3(-0.46, 0.70, -0.18)
+	# Bosh va gavda kabina tomidan chiqib ketmasligi uchun o‘rindiq sathiga mos pastroq siluet.
+	root.position = Vector3(-0.46, 0.42, -0.18)
 	var teri := _material(Color("c88d66"), 0.9)
 	var kiyim := _material(Color("2b73bd"), 0.82)
-	_quti(root, "Gavda", Vector3(0, 0.43, 0.05), Vector3(0.48, 0.62, 0.30), kiyim)
-	_sfera(root, "Bosh", Vector3(0, 0.93, -0.04), Vector3(0.43, 0.50, 0.42), teri)
+	_quti(root, "Gavda", Vector3(0, 0.36, 0.05), Vector3(0.46, 0.54, 0.30), kiyim)
+	_sfera(root, "Bosh", Vector3(0, 0.78, -0.04), Vector3(0.39, 0.42, 0.38), teri)
 	for x in [-0.25, 0.25]:
-		var qol := _kapsula(root, "Qol", Vector3(x, 0.42, -0.28), 0.07, 0.55, teri)
+		var qol := _kapsula(root, "Qol", Vector3(x, 0.35, -0.28), 0.07, 0.48, teri)
 		qol.rotation.x = deg_to_rad(68.0)
 	return root
 
@@ -324,6 +327,14 @@ func _eshik_animatsiyasi(_kirishmi: bool) -> void:
 func tezlik_kmh() -> int:
 	return int(abs(joriy_tezlik) * 3.6)
 
+func salon_silueti_ichidami() -> bool:
+	var bosh := haydovchi_modeli.get_node_or_null("Bosh") as Node3D if is_instance_valid(haydovchi_modeli) else null
+	var kabina := kuzov_root.get_node_or_null("Kabina") as Node3D if is_instance_valid(kuzov_root) else null
+	if not is_instance_valid(bosh) or not is_instance_valid(kabina):
+		return false
+	# Boshning yuqori nuqtasi kabinaning yuqori chetidan pastda qoladi.
+	return haydovchi_modeli.position.y + bosh.position.y + 0.21 <= kabina.position.y + 0.30
+
 func _model_profilini_qollash() -> void:
 	var profillar := {
 		"sedan": Vector3(1.0, 1.0, 1.0),
@@ -350,6 +361,8 @@ func _model_profilini_qollash() -> void:
 			mustahkamlik = maksimal_mustahkamlik
 		"hatchback":
 			burilish_tezligi = maxf(burilish_tezligi, 1.82)
+	# Har qanday profil yoki tashqi qiymat boshqariladigan transportni 140 km/soatdan oshira olmaydi.
+	maksimal_tezlik = minf(maksimal_tezlik, MAKSIMAL_TEZLIK_M_S)
 
 func transport_holati_ol() -> Dictionary:
 	return {

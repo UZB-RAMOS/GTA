@@ -1,6 +1,8 @@
 extends CharacterBody3D
 
 const YOL_SATHI := -0.10
+const MAKSIMAL_TEZLIK_KMH := 140.0
+const MAKSIMAL_TEZLIK_M_S := MAKSIMAL_TEZLIK_KMH / 3.6
 const VehicleExitHelper = preload("res://scripts/vehicle_exit_helper.gd")
 
 enum AIHolat { HARAKAT, SVETOFOR, TIRBANDLIK, UZOQ_LOD, OYINCHI, TIKLANISH }
@@ -9,7 +11,7 @@ enum AIHolat { HARAKAT, SVETOFOR, TIRBANDLIK, UZOQ_LOD, OYINCHI, TIKLANISH }
 @export var tezlik := 7.0
 @export var model_turi := 0
 @export var transport_turi := "sedan"
-@export var maksimal_tezlik := 52.0
+@export var maksimal_tezlik := MAKSIMAL_TEZLIK_M_S
 @export var tezlanish := 14.0
 @export var tormoz := 30.0
 @export var erkin_sekinlashish := 1.35
@@ -94,9 +96,9 @@ func _yarat_model() -> void:
 			disk.rotation.z = PI / 2.0
 			gildiraklar.append(shina)
 
-	# Salon ichida ko‘rinadigan haydovchi silueti.
-	_quti("HaydovchiGavda", Vector3(-0.38, 1.12, -0.05), Vector3(0.38, 0.45, 0.27), _material(Color("3c596f")))
-	_sfera("HaydovchiBosh", Vector3(-0.38, 1.52, -0.08), Vector3(0.32, 0.38, 0.32), _material(Color("c99168")))
+	# Salon ichida ko‘rinadigan haydovchi silueti; bosh kabina tomidan tashqariga chiqmaydi.
+	_quti("HaydovchiGavda", Vector3(-0.38, 1.02, -0.05), Vector3(0.38, 0.38, 0.27), _material(Color("3c596f")))
+	_sfera("HaydovchiBosh", Vector3(-0.38, 1.30, -0.08), Vector3(0.28, 0.30, 0.28), _material(Color("c99168")))
 
 func _physics_process(delta: float) -> void:
 	zarba_sovush_vaqti = maxf(0.0, zarba_sovush_vaqti - delta)
@@ -284,6 +286,14 @@ func _xavfsiz_chiqish_nuqtasi() -> Dictionary:
 func tezlik_kmh() -> int:
 	return int(absf(joriy_tezlik) * 3.6)
 
+func salon_silueti_ichidami() -> bool:
+	var bosh := get_node_or_null("HaydovchiBosh") as Node3D
+	var kabina := get_node_or_null("Kabina") as Node3D
+	if not is_instance_valid(bosh) or not is_instance_valid(kabina):
+		return false
+	# Profil masshtabi o‘zgarsa ham bosh va kabina bir xil local koordinatada qoladi.
+	return bosh.position.y + 0.15 * bosh.scale.y <= kabina.position.y + 0.35 * kabina.scale.y
+
 func _qizil_chiroq_yaqin() -> bool:
 	var vertikal: bool = abs(global_transform.basis.z.z) > abs(global_transform.basis.z.x)
 	for chiroq in get_tree().get_nodes_in_group("svetofor"):
@@ -341,6 +351,8 @@ func _model_profilini_qollash() -> void:
 		"retro":
 			for x in [-0.54, 0.54]:
 				_sfera("RetroFara", Vector3(x, 0.91, -1.72), Vector3(0.25, 0.25, 0.12), _emissive(Color("ffe6a1"), 2.4))
+	# Egallanadigan trafik avtomobillari ham 140 km/soatdan oshmaydi.
+	maksimal_tezlik = minf(maksimal_tezlik, MAKSIMAL_TEZLIK_M_S)
 
 func transport_turi_nomi() -> String:
 	return transport_turi

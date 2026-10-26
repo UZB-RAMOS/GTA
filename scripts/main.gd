@@ -2496,8 +2496,8 @@ func _self_test() -> void:
 	topshiriq_transporti.zarar_ol(9999)
 	if topshiriq_transporti.mustahkamlik != topshiriq_transporti.maksimal_mustahkamlik or topshiriq_transporti.vayron:
 		xatolar.append("Boshqariladigan transport buzilmas holatda qolmadi")
-	if int(round(topshiriq_transporti.maksimal_tezlik * 3.6)) != 270:
-		xatolar.append("Tezkor transport sozlamasi noto‘g‘ri")
+	if int(round(topshiriq_transporti.maksimal_tezlik * 3.6)) != 140:
+		xatolar.append("Boshqariladigan transportning 140 km/soat limiti noto‘g‘ri")
 	topshiriq_transporti.joriy_tezlik = 18.0
 	topshiriq_transporti.boshqaruv_tezligini_yangila(0.0, false, 1.0)
 	if topshiriq_transporti.joriy_tezlik >= 18.0 or topshiriq_transporti.joriy_tezlik < 16.0:
@@ -2515,6 +2515,10 @@ func _self_test() -> void:
 		xatolar.append("Transport ichida o‘yinchi joni himoyalanmadi")
 	var sinov_trafik = get_tree().get_first_node_in_group("trafik")
 	if is_instance_valid(sinov_trafik):
+		if int(round(sinov_trafik.maksimal_tezlik * 3.6)) != 140:
+			xatolar.append("Egallanadigan trafik transportining 140 km/soat limiti noto‘g‘ri")
+		if not sinov_trafik.salon_silueti_ichidami():
+			xatolar.append("Trafik transporti haydovchisi salon tomidan chiqib ketdi")
 		if not sinov_trafik.has_method("kirish") or not sinov_trafik.has_method("chiqish"):
 			xatolar.append("Trafik avtomobilini egallash interfeysi yo‘q")
 		else:
@@ -2574,6 +2578,8 @@ func _self_test() -> void:
 		xatolar.append("Transportga kirish bosqichi ishlamadi")
 	if not topshiriq_transporti.haydovchi_modeli.visible:
 		xatolar.append("Transport ichidagi haydovchi modeli ko‘rinmadi")
+	if not topshiriq_transporti.salon_silueti_ichidami():
+		xatolar.append("Boshqariladigan transport haydovchisi salon tomidan chiqib ketdi")
 	var xavfsiz_chiqish: Dictionary = topshiriq_transporti._xavfsiz_chiqish_nuqtasi()
 	if xavfsiz_chiqish.is_empty() or not xavfsiz_chiqish.has("yer_normali"):
 		xatolar.append("Transportdan chiqish uchun yerga tayangan xavfsiz nuqta topilmadi")
@@ -2599,7 +2605,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=278x208 chunk=12+streaming phase8_sharqiy=3_chunk+5_landmark landmark=18 interyer=3 navigatsiya=9_marshrut tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=46 fara=17 transport=10_tur+270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+yangi_hudud+egallanadi parvoz=yoq piyoda=44+sharqiy_hudud+7_rol+FSM+suhbat+zarba_uchishi svetofor=120 dokon=6 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+MultiMesh+kesh+bosqichli_qurilish kamera=silliq+avto_old+collision missiya=7+fail+retry xarita=mini+toliq+kengaygan sozlama=grafika+ekran+FPS intro=JMJ localization=3_til save_v4=eski_mos+yangi_hudud")
+		print("SELF_TEST_OK: dunyo=278x208 chunk=12+streaming phase8_sharqiy=3_chunk+5_landmark landmark=18 interyer=3 navigatsiya=9_marshrut tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=46 fara=17 transport=10_tur+140kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish+salon_silueti trafik=16+yangi_hudud+egallanadi+140kmh parvoz=yoq piyoda=44+sharqiy_hudud+7_rol+FSM+suhbat+zarba_uchishi svetofor=120 dokon=6 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+MultiMesh+kesh+bosqichli_qurilish kamera=silliq+avto_old+collision missiya=7+fail+retry xarita=mini+toliq+kengaygan sozlama=grafika+ekran+FPS intro=JMJ localization=3_til save_v4=eski_mos+yangi_hudud")
 		audio_tizimi.tozalash()
 		await get_tree().process_frame
 		await get_tree().process_frame

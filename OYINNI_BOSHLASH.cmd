@@ -2,7 +2,8 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 
-set "OYIN_EXE=%~dp0builds\Toshkent_Sarguzashti_0.8.0.exe"
+set "OYIN_EXE=%~dp0builds\Toshkent_Sarguzashti_0.8.1.exe"
+if not exist "%OYIN_EXE%" set "OYIN_EXE=%~dp0builds\Toshkent_Sarguzashti_0.8.0.exe"
 if not exist "%OYIN_EXE%" set "OYIN_EXE=%~dp0builds\Toshkent_Sarguzashti_0.7.0.exe"
 if not exist "%OYIN_EXE%" set "OYIN_EXE=%~dp0builds\Toshkent_Sarguzashti.exe"
 if not exist "%OYIN_EXE%" set "OYIN_EXE=%~dp0Toshkent_Sarguzashti.exe"
