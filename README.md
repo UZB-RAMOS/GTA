@@ -2,7 +2,7 @@
 
 `Toshkent Sarguzashti` — Toshkent mahallalari va keng ko‘chalaridan ilhomlangan original 3D ochiq-dunyo MVP o‘yini. Loyiha GTA kodi, xaritasi, modeli, musiqasi, logotipi yoki boshqa aktivlarini ishlatmaydi.
 
-Joriy versiya: `0.7.0 PHASE 3–7 — NPC/traffic, gameplay, interyerlar va Windows build`.
+Joriy versiya: `0.8.0 PHASE 8.0–8.1 — audit, optimizatsiya va Sharqiy xiyobon kengaytmasi`.
 
 ![O‘yin jarayoni](screenshots/preview.png)
 
@@ -16,10 +16,12 @@ Joriy versiya: `0.7.0 PHASE 3–7 — NPC/traffic, gameplay, interyerlar va Wind
 
 ![Kuchli yomg‘ir va nam asfalt](screenshots/preview_weather.png)
 
+![PHASE 8.1 Sharqiy xiyobon](screenshots/preview_phase8.png)
+
 ## Ishga tushirish
 
-1. `builds/Toshkent_Sarguzashti_0.7.0_Windows.zip` faylini yuklab oling va alohida papkaga oching.
-2. Ichidagi `Toshkent_Sarguzashti_0.7.0.exe` faylini ishga tushiring.
+1. `builds/Toshkent_Sarguzashti_0.8.0_Windows.zip` faylini yuklab oling va alohida papkaga oching.
+2. Ichidagi `Toshkent_Sarguzashti_0.8.0.exe` faylini ishga tushiring.
 3. Asosiy menyudan **Yangi o‘yin** tugmasini bosing.
 4. Sariq topshiriq belgilarini kuzating.
 
@@ -52,9 +54,11 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 ## Tayyor imkoniyatlar
 
 - kirish menyusining pastki qismida `by JMJ gems` brend yozuvi;
-- 210 × 210 o‘lchamli, 9 ta 70 × 70 mantiqiy chunkka bo‘lingan procedural original shahar;
+- 278 × 208 o‘lchamli, 12 ta 70 × 70 mantiqiy chunkka bo‘lingan procedural original shahar;
+- eski koordinatalarni saqlagan, yo‘llar bilan uzluksiz bog‘langan uch chunkli Sharqiy xiyobon kengaytmasi;
+- yangi mehmonxona, texnologiya minorasi, biznes markazi, savdo uyi, transport markazi, piyoda ko‘prigi va tungi xiyobon;
 - o‘yinchi masofasiga qarab shahar chunklarini faollashtiradigan world streaming va LOW/MEDIUM/HIGH radiuslari;
-- Markaz, Tashkent City, Chorsu, Chilonzor, Yunusobod va Sergeli hamda Mustaqillik maydoni, Minor, tungi sayilgoh, vokzal va metro uchun 13 ta original procedural landmark;
+- Markaz, Tashkent City, Chorsu, Chilonzor, Yunusobod va Sergeli hamda Mustaqillik maydoni, Minor, tungi sayilgoh, vokzal, metro va Sharqiy xiyobon uchun 18 ta original procedural landmark;
 - 5 × 5 chorraha tarmog‘i, uzun va jihozlardan tozalangan yo‘llar, batafsil fasadlar, piyodalar yo‘laklari, bozor, trotuardagi bekatlar, skameykalar, ko‘cha chiroqlari va daraxtlar;
 - doimiy tungi muhit, yoniq bino derazalari, 40 ta real yoritadigan ko‘cha fonari va 17 ta avtomobil farasi;
 - tiniq tun, yengil yomg‘ir, kuchli yomg‘ir, tuman va bulutli tun; yomg‘irda nam asfalt materiali;
@@ -70,13 +74,13 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - Chevrolet shahar avtomobillarining umumiy dizayn tilidan ilhomlangan, lekin logotip va tayyor brend aktivlarisiz yaratilgan original kuzovlar;
 - transportga kirish/chiqish animatsiyasi, devor ichiga tushirmaydigan xavfsiz chiqish nuqtasi va haydashda avtomatik old tomonga qaytadigan tezlikka mos kamera;
 - transportdan tushishda bo‘shliq bilan birga haqiqiy yer, yer qiyaligi va to‘liq personaj kapsulasini tekshiradigan umumiy xavfsizlik moduli;
-- 6 ta o‘ng tomonlama waypoint yo‘nalishidan iborat navigation graph bo‘ylab yuradigan, svetoforda va oldidagi transportga qarab to‘xtaydigan, tiqilib qolsa yo‘lga qaytadigan va o‘yinchi `E` bilan egallashi mumkin bo‘lgan 16 ta trafik avtomobili;
+- 9 ta o‘ng tomonlama waypoint yo‘nalishidan iborat navigation graph bo‘ylab eski va yangi hududda yuradigan, svetoforda va oldidagi transportga qarab to‘xtaydigan hamda o‘yinchi `E` bilan egallashi mumkin bo‘lgan 16 ta trafik avtomobili;
 - sedan, hatchback, sportcar, SUV, taxi, bus, minivan, delivery van, fictional patrol va retro kabi 10 ta procedural transport profili;
 - barcha avtomobillarni tekis yo‘l sathida ushlab turadigan parvozga qarshi barqarorlashtirish;
 - turli bo‘y, kiyim va yuzga ega 44 ta bo‘g‘inli piyoda NPC; musht, tayoq yoki elektroshoker zarbasi ularni kuchga qarab orqaga va havoga uloqtiradi;
 - yurish, kutish, suhbat, qochish, zarba va halok holatlariga ega FSM hamda 7 rol: oddiy, sotuvchi, taksi haydovchisi, bekat odami, mahalla aholisi, ishchi va missiya personaji;
 - `E` bilan murojaat qilinganda roliga mos original o‘zbekcha qisqa suhbat aytadigan NPC lar;
-- 100 ta ishlaydigan svetofor va xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
+- 120 ta ishlaydigan svetofor va kengaygan xarita chetidagi 4 ta ko‘rinmas fizik to‘siq;
 - tezlikka bog‘liq muvozanatli urilish zarari, bir zarbaning qayta-qayta hisoblanishidan himoya, buzilmas boshqariladigan avtomobil, o‘yinchi joni va himoya zirhi;
 - o‘yinchi transport ichida bo‘lganida har qanday to‘qnashuvdan jonini to‘liq himoyalaydigan salon modeli;
 - NPC joni tugaganda tushadigan yig‘ib olinadigan pul modeli;
@@ -93,20 +97,22 @@ Build mustaqil code-signing sertifikati bilan imzolanmagan. Shu sabab Windows Sm
 - buzilgan asosiy save o‘rniga tekshirilgan zaxira save’ni yuklash va eski schema 1–3 bilan moslik;
 - kelajakda to‘liq tarjimani kengaytirish uchun o‘zbek, rus va ingliz tilli localization arxitekturasi;
 - Windows uchun bitta faylli `.exe` build.
+- yangi hududni uch kadrda SceneTree-safe bosqichli tayyorlash, keshlangan chunk/yorug‘lik ro‘yxatlari va `MultiMesh` detallar;
 
 ## Qotish bo‘yicha tuzatish
 
-`0.4.1` versiyasida ayni AMD Radeon Graphics kompyuterida bir xil avtomatik sahna bilan o‘lchov qilindi:
+`0.8.0` uchun ayni AMD Radeon Graphics kompyuterida bir xil avtomatik sahna bilan qayta o‘lchov qilindi. Oldingi hisobotdagi `48–59 FPS` tarixiy natija bo‘lgani uchun yangi audit baseline’i alohida qayta olindi:
 
-| Ko‘rsatkich | Oldin | Keyin |
-|---|---:|---:|
-| O‘rtacha FPS | 7.8 | 29.7 |
-| Bir kadrdagi draw call | 4 677 | 537 |
-| Bir kadrdagi obyekt | 4 919 | 779 |
-| Bir kadrdagi primitive | 5 694 660 | 66 072 |
-| Asosiy kadr vaqti | 69.80 ms | 22.63 ms |
+| Ko‘rsatkich | PHASE 8 oldi baseline | PHASE 8 markaz | Sharqiy xiyobon |
+|---|---:|---:|---:|
+| O‘rtacha FPS | 29.7 | 50.9 | 52.6 |
+| Bir kadrdagi draw call | 537 | 443 | 151 |
+| Bir kadrdagi obyekt | 820 | 738 | 344 |
+| Bir kadrdagi primitive | 57 894 | 46 212 | 14 508 |
+| Physics vaqti | 6.39 ms | 5.88 ms | 5.26 ms |
+| Process vaqti | 86.88 ms | 24.13 ms | 21.09 ms |
 
-Qotishga birgina xato emas, bir nechta yuk sabab bo‘lgan: yuqori segmentli procedural sfera/kapsulalar, yuzlab yo‘l belgilarining alohida chizilishi, 100 svetoforning har kadr material almashtirishi, har bir trafik mashinasining har kadr barcha svetoforlarni qidirishi, 57 ta uzoq masofali real-time chiroq, `glow` va dinamik oy soyasi. Tuzatishda pastroq, ko‘rinishni deyarli o‘zgartirmaydigan mesh segmentlari, `MultiMesh`, masofa bo‘yicha LOD, keshlangan trafik sezgisi, 4 Hz svetofor yangilanishi va kameraga yaqin yoritish qo‘llandi.
+Qotishga birgina xato emas, bir nechta yuk sabab bo‘lgan: katta sinxron procedural dunyo qurilishi, ko‘p alohida render obyektlari va takroriy group qidiruvlari. Tuzatishda yangi hudud bosqichli yaratildi, bezaklar `MultiMesh` bilan birlashtirildi, chunk/yorug‘lik/fara ro‘yxatlari keshlangan va mavjud LOD hamda trafik keshlari saqlandi. FPS qurilma, drayver va kamera holatiga bog‘liq; bu raqamlar kafolat emas.
 
 Ichki o‘lchovni manba loyihada takrorlash:
 
@@ -124,6 +130,7 @@ Godot_v4.7.2-stable_win64_console.exe --path . -- --performance-test
 - `PHASE_0_1_HISOBOT.md` — mavjud loyiha auditi, PHASE 1 o‘zgarishlari, testlar va keyingi yo‘l xaritasi.
 - `PHASE_2_HISOBOT.md` — PHASE 2 real kod o‘zgarishlari, testlar va halol cheklovlar.
 - `PHASE_3_7_HISOBOT.md` — yangi AI, transport, interyer, iqtisodiyot, missiya va build natijalari.
+- `PHASE_8_0_1_HISOBOT.md` — 65 imkoniyat auditi, Sharqiy xiyobon, performance taqqoslashi va keyingi roadmap.
 
 Standalone `.exe` hajmi GitHub’ning oddiy fayl chegarasidan katta. Shu sabab u repository ichida siqilgan ZIP ko‘rinishida saqlanadi.
 

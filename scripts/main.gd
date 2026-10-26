@@ -15,6 +15,7 @@ const AudioSystemScript = preload("res://scripts/audio_system.gd")
 const NavigationGraphScript = preload("res://scripts/navigation_graph.gd")
 const InteractiveInteriorScript = preload("res://scripts/interactive_interior.gd")
 const LocalizationScript = preload("res://scripts/localization.gd")
+const Phase8EastDistrictScript = preload("res://scripts/phase8_east_district.gd")
 const AsphaltTexture = preload("res://assets/textures/asphalt_wet_original.png")
 const FacadeTexture = preload("res://assets/textures/toshkent_facade_night_original.png")
 
@@ -22,6 +23,10 @@ const SAVE_PATH := "user://toshkent_sarguzashti_save.json"
 const SAVE_BACKUP_PATH := "user://toshkent_sarguzashti_save_backup.json"
 const DUNYO_CHEGARASI := 104.0
 const DUNYO_HAJMI := 210.0
+const DUNYO_MIN_X := -104.0
+const DUNYO_MAX_X := 174.0
+const DUNYO_MIN_Z := -104.0
+const DUNYO_MAX_Z := 104.0
 const CHUNK_HAJMI := 70.0
 const YOL_KOORDINATALARI := [-70.0, -35.0, 0.0, 35.0, 70.0]
 const YOL_YARIM_KENGLIGI := 5.75
@@ -61,6 +66,7 @@ var ishlash_test_boshlanishi := 0
 var ishlash_test_process_jami := 0.0
 var ishlash_test_physics_jami := 0.0
 var ishlash_test_fps_jami := 0.0
+var ishlash_test_hududi := "markaz"
 var tizim_yangilash_vaqti := 0.0
 var yoritish_yangilash_vaqti := 0.0
 var jahon_muhiti: Environment
@@ -84,6 +90,9 @@ var intro_faol := false
 var audio_tizimi: Node
 var yol_grafi: Node
 var tarjima: Node
+var kengaytirilgan_hudud: Node3D
+var shahar_chiroqlari_keshi: Array[Node] = []
+var avtomobil_faralari_keshi: Array[Node] = []
 var egalikdagi_transportlar: Array[String] = ["j_m_j_shahar_sedani"]
 var umumiy_inventar: Dictionary = {}
 var missiya_buyumlari: Array[String] = []
@@ -119,8 +128,9 @@ func _ready() -> void:
 	_topshiriq_bosqichini_qoy(0)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	var argumentlar := OS.get_cmdline_user_args()
-	preview_rejimi = argumentlar.has("--capture-preview") or argumentlar.has("--capture-vehicle") or argumentlar.has("--capture-menu") or argumentlar.has("--capture-store") or argumentlar.has("--capture-map") or argumentlar.has("--capture-weather")
-	ishlash_testi = argumentlar.has("--performance-test")
+	preview_rejimi = argumentlar.has("--capture-preview") or argumentlar.has("--capture-vehicle") or argumentlar.has("--capture-menu") or argumentlar.has("--capture-store") or argumentlar.has("--capture-map") or argumentlar.has("--capture-weather") or argumentlar.has("--capture-phase8")
+	ishlash_testi = argumentlar.has("--performance-test") or argumentlar.has("--performance-phase8")
+	ishlash_test_hududi = "sharqiy_xiyobon" if argumentlar.has("--performance-phase8") else "markaz"
 	if argumentlar.has("--capture-preview"):
 		_yordamchi_preview_holat()
 	elif argumentlar.has("--capture-vehicle"):
@@ -136,11 +146,15 @@ func _ready() -> void:
 	elif argumentlar.has("--capture-weather"):
 		_yordamchi_preview_holat()
 		ob_havo.rejimni_qoy("kuchli_yomgir")
+	elif argumentlar.has("--capture-phase8"):
+		_yordamchi_phase8_preview_holat()
 	elif argumentlar.has("--self-test"):
 		_self_test.call_deferred()
 	elif ishlash_testi:
 		_grafika_sifati_tanlandi(0)
 		Engine.max_fps = 60
+		if ishlash_test_hududi == "sharqiy_xiyobon":
+			_yordamchi_phase8_preview_holat()
 		ishlash_test_boshlanishi = Time.get_ticks_msec()
 	else:
 		_asosiy_menyuni_och()
@@ -228,6 +242,9 @@ func _shahar_yarat() -> void:
 	shahar.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(shahar)
 	_chunk_tuzilmasi_yarat(shahar)
+	kengaytirilgan_hudud = Phase8EastDistrictScript.new()
+	shahar.add_child(kengaytirilgan_hudud)
+	kengaytirilgan_hudud.hudud_tayyor.connect(_phase8_hudud_tayyor)
 
 	_statik_quti(shahar, "Yer", Vector3(0, -0.3, 0), Vector3(DUNYO_HAJMI, 0.6, DUNYO_HAJMI), Color("26392c"))
 
@@ -298,6 +315,11 @@ func _shahar_yarat() -> void:
 	_chegara_yarat(shahar)
 	_korsatkich_yarat(shahar, Vector3(-12.0, 3.2, -18), "ESKI SHAHAR", Color("126aa0"))
 	_korsatkich_yarat(shahar, Vector3(12.0, 3.2, 23), "YANGI MAHALLA", Color("2c8b57"))
+
+func _phase8_hudud_tayyor() -> void:
+	if is_instance_valid(dunyo_oqimi) and dunyo_oqimi.has_method("chunklarni_qayta_top"):
+		dunyo_oqimi.chunklarni_qayta_top()
+	_render_keshlarini_yangila()
 
 func _yol_chiziqlari(parent: Node3D, vertikal: bool, koordinata: float) -> void:
 	var joylar: Array[Vector3] = []
@@ -657,11 +679,14 @@ func _svetoforlar_yarat(parent: Node3D) -> void:
 				parent.add_child(svetofor)
 
 func _chegara_yarat(parent: Node3D) -> void:
+	var x_markaz := (DUNYO_MIN_X + DUNYO_MAX_X) * 0.5
+	var x_hajm := DUNYO_MAX_X - DUNYO_MIN_X
+	var z_hajm := DUNYO_MAX_Z - DUNYO_MIN_Z
 	var devorlar := [
-		[Vector3(DUNYO_CHEGARASI, 5.0, 0), Vector3(1.0, 10.0, DUNYO_HAJMI)],
-		[Vector3(-DUNYO_CHEGARASI, 5.0, 0), Vector3(1.0, 10.0, DUNYO_HAJMI)],
-		[Vector3(0, 5.0, DUNYO_CHEGARASI), Vector3(DUNYO_HAJMI, 10.0, 1.0)],
-		[Vector3(0, 5.0, -DUNYO_CHEGARASI), Vector3(DUNYO_HAJMI, 10.0, 1.0)]
+		[Vector3(DUNYO_MAX_X, 5.0, 0), Vector3(1.0, 10.0, z_hajm)],
+		[Vector3(DUNYO_MIN_X, 5.0, 0), Vector3(1.0, 10.0, z_hajm)],
+		[Vector3(x_markaz, 5.0, DUNYO_MAX_Z), Vector3(x_hajm, 10.0, 1.0)],
+		[Vector3(x_markaz, 5.0, DUNYO_MIN_Z), Vector3(x_hajm, 10.0, 1.0)]
 	]
 	for i in range(devorlar.size()):
 		var body := StaticBody3D.new()
@@ -681,7 +706,8 @@ func _chegara_yarat(parent: Node3D) -> void:
 	var yotiq_joylar: Array[Vector3] = []
 	for koordinata in range(-96, 97, 12):
 		tik_joylar.append(Vector3(-102.4, 1.0, koordinata))
-		tik_joylar.append(Vector3(102.4, 1.0, koordinata))
+		tik_joylar.append(Vector3(172.4, 1.0, koordinata))
+	for koordinata in range(-96, 169, 12):
 		yotiq_joylar.append(Vector3(koordinata, 1.0, -102.4))
 		yotiq_joylar.append(Vector3(koordinata, 1.0, 102.4))
 	_quti_multimesh(parent, "ChegaraPanjaraTik", Vector3(0.18, 2.0, 7.5), tik_joylar, Color("8b7138"), 150.0)
@@ -700,10 +726,12 @@ func _korsatkich_yarat(parent: Node3D, p: Vector3, matn: String, rang: Color) ->
 
 func _yol_ustidami(p: Vector3, zaxira := 0.0) -> bool:
 	for yol in YOL_KOORDINATALARI:
-		if absf(p.x - yol) <= YOL_YARIM_KENGLIGI + zaxira:
+		if p.x <= DUNYO_CHEGARASI and absf(p.x - yol) <= YOL_YARIM_KENGLIGI + zaxira:
 			return true
 		if absf(p.z - yol) <= YOL_YARIM_KENGLIGI + zaxira:
 			return true
+	if p.x >= DUNYO_CHEGARASI and absf(p.x - 140.0) <= YOL_YARIM_KENGLIGI + zaxira:
+		return true
 	return false
 
 func _statik_quti(parent: Node3D, nom: String, p: Vector3, hajm: Vector3, rang: Color) -> StaticBody3D:
@@ -889,7 +917,7 @@ func _transportlar_yarat() -> void:
 func _piyodalar_yarat() -> void:
 	var ranglar := [Color("75451f"), Color("28466d"), Color("4b6934"), Color("66334f"), Color("716624"), Color("245142"), Color("642b28")]
 	var npc_turlari := ["oddiy", "sotuvchi", "taksi_haydovchi", "bekat_odami", "mahalla_aholisi", "ishchi", "missiya_personaji"]
-	var markazlar := [Vector3(-25, 0.1, -25), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29), Vector3(-84, 0.1, -53), Vector3(-53, 0.1, 53), Vector3(53, 0.1, -53), Vector3(84, 0.1, 52)]
+	var markazlar := [Vector3(-25, 0.1, -25), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29), Vector3(-84, 0.1, -53), Vector3(-53, 0.1, 53), Vector3(53, 0.1, -53), Vector3(84, 0.1, 52), Vector3(122, 0.1, 52), Vector3(157, 0.1, -18)]
 	for i in range(44):
 		var piyoda := PedestrianScript.new()
 		piyoda.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -1048,7 +1076,8 @@ func _hud_yarat() -> void:
 	minimap.position = Vector2(-202, 18)
 	minimap.size = Vector2(180, 180)
 	minimap.oyinchi = oyinchi
-	minimap.dunyo_radiusi = DUNYO_CHEGARASI
+	minimap.dunyo_min = Vector2(DUNYO_MIN_X, DUNYO_MIN_Z)
+	minimap.dunyo_max = Vector2(DUNYO_MAX_X, DUNYO_MAX_Z)
 	canvas.add_child(minimap)
 
 	_inventar_oynasi_yarat(canvas)
@@ -1246,6 +1275,7 @@ func _egalikdagi_transport_yarat(tur: String, holat: Dictionary = {}) -> Charact
 		mashina.rotation.y = float(holat.get("rotation_y", PI))
 	add_child(mashina)
 	mashina.add_to_group("egalikdagi_transport")
+	_render_keshlarini_yangila.call_deferred()
 	return mashina
 
 func _dokon_yop() -> void:
@@ -1299,7 +1329,8 @@ func _xarita_oynasi_yarat(canvas: CanvasLayer) -> void:
 	katta_xarita = FullMapScript.new()
 	katta_xarita.oyinchi = oyinchi
 	katta_xarita.maqsad = belgi
-	katta_xarita.dunyo_radiusi = DUNYO_CHEGARASI
+	katta_xarita.dunyo_min = Vector2(DUNYO_MIN_X, DUNYO_MIN_Z)
+	katta_xarita.dunyo_max = Vector2(DUNYO_MAX_X, DUNYO_MAX_Z)
 	center.add_child(katta_xarita)
 	var yopish := Button.new()
 	yopish.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -1787,11 +1818,25 @@ func _process(delta: float) -> void:
 func _yoritish_lod_yangila() -> void:
 	if not is_instance_valid(oyinchi) or not is_instance_valid(oyinchi.kamera):
 		return
+	if shahar_chiroqlari_keshi.is_empty() or avtomobil_faralari_keshi.is_empty():
+		_render_keshlarini_yangila()
 	var kamera_joyi: Vector3 = oyinchi.kamera.global_position
+	for chiroq in shahar_chiroqlari_keshi:
+		if is_instance_valid(chiroq):
+			chiroq.visible = chiroq.global_position.distance_squared_to(kamera_joyi) < yoritish_masofasi_kv
+	for fara in avtomobil_faralari_keshi:
+		if is_instance_valid(fara):
+			fara.visible = fara.global_position.distance_squared_to(kamera_joyi) < fara_masofasi_kv
+
+func _render_keshlarini_yangila() -> void:
+	shahar_chiroqlari_keshi.clear()
+	avtomobil_faralari_keshi.clear()
 	for chiroq in get_tree().get_nodes_in_group("shahar_chirogi"):
-		chiroq.visible = chiroq.global_position.distance_squared_to(kamera_joyi) < yoritish_masofasi_kv
+		if is_instance_valid(chiroq):
+			shahar_chiroqlari_keshi.append(chiroq)
 	for fara in get_tree().get_nodes_in_group("avtomobil_farasi"):
-		fara.visible = fara.global_position.distance_squared_to(kamera_joyi) < fara_masofasi_kv
+		if is_instance_valid(fara):
+			avtomobil_faralari_keshi.append(fara)
 
 func _ishlash_testini_yangila() -> void:
 	ishlash_test_kadri += 1
@@ -1804,6 +1849,7 @@ func _ishlash_testini_yangila() -> void:
 		return
 	var namuna_soni := 180.0
 	var natija := {
+		"hudud": ishlash_test_hududi,
 		"orta_fps": snappedf(ishlash_test_fps_jami / namuna_soni, 0.1),
 		"process_ms": snappedf(ishlash_test_process_jami * 1000.0 / namuna_soni, 0.01),
 		"physics_ms": snappedf(ishlash_test_physics_jami * 1000.0 / namuna_soni, 0.01),
@@ -2200,6 +2246,15 @@ func _yordamchi_transport_preview_holat() -> void:
 	oyinchi.prujina.spring_length = 3.4
 	yordam_yozuvi.text = "JMJ original shahar avtomobili • avtomatik fara • avtomatik tiklanish"
 
+func _yordamchi_phase8_preview_holat() -> void:
+	# Sharqiy kengaytmaning yo‘li, binolari, piyodalari va tungi chiroqlarini ko‘rsatadi.
+	oyinchi.global_position = Vector3(106.0, 0.2, 7.0)
+	oyinchi.rotation.y = -PI / 2.0
+	oyinchi.kamera_maqsad_yaw = oyinchi.rotation.y
+	oyinchi.kamera_pivot.rotation.x = deg_to_rad(-10.0)
+	oyinchi.prujina.spring_length = 6.0
+	yordam_yozuvi.text = "PHASE 8.1 • Sharqiy xiyobon • yangi chunk, yo‘l, NPC va Traffic AI"
+
 func _preview_saqlash() -> void:
 	await RenderingServer.frame_post_draw
 	var image := get_viewport().get_texture().get_image()
@@ -2215,6 +2270,8 @@ func _preview_saqlash() -> void:
 		fayl_nomi = "preview_map.png"
 	elif argumentlar.has("--capture-weather"):
 		fayl_nomi = "preview_weather.png"
+	elif argumentlar.has("--capture-phase8"):
+		fayl_nomi = "preview_phase8.png"
 	var yol := ProjectSettings.globalize_path("res://screenshots/" + fayl_nomi)
 	var xato := image.save_png(yol)
 	if xato != OK:
@@ -2224,12 +2281,16 @@ func _preview_saqlash() -> void:
 func _self_test() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
+	for _kutish in range(10):
+		if is_instance_valid(kengaytirilgan_hudud) and bool(kengaytirilgan_hudud.get("tayyor")):
+			break
+		await get_tree().process_frame
 	var xatolar: Array[String] = []
 	var shahar := get_node_or_null("Shahar")
 	if not is_instance_valid(shahar) or shahar.get_child_count() < 40:
 		xatolar.append("Procedural shahar to‘liq yaratilmagan")
-	if get_tree().get_nodes_in_group("dunyo_chunki").size() != 9:
-		xatolar.append("70x70 o‘lchamli 9 ta dunyo chunki yaratilmagan")
+	if get_tree().get_nodes_in_group("dunyo_chunki").size() != 12:
+		xatolar.append("70x70 o‘lchamli 12 ta dunyo chunki yaratilmagan")
 	else:
 		var obyektli_chunklar := 0
 		for chunk in get_tree().get_nodes_in_group("dunyo_chunki"):
@@ -2237,6 +2298,10 @@ func _self_test() -> void:
 				obyektli_chunklar += 1
 		if obyektli_chunklar < 6 or not is_instance_valid(dunyo_oqimi) or dunyo_oqimi.faol_soni() < 1:
 			xatolar.append("Masofaviy chunk streaming real shahar obyektlariga ulanmagan")
+	if not is_instance_valid(kengaytirilgan_hudud) or not bool(kengaytirilgan_hudud.get("tayyor")) or get_tree().get_nodes_in_group("phase8_chunk").size() != 3:
+		xatolar.append("PHASE 8 Sharqiy xiyobon uchta chunk bilan yakunlanmadi")
+	if get_tree().get_nodes_in_group("phase8_obyekt").size() < 6 or get_tree().get_nodes_in_group("phase8_landmark").size() < 5:
+		xatolar.append("Sharqiy xiyobonning original 3D obyektlari yaratilmagan")
 	if not is_instance_valid(oyinchi) or not is_instance_valid(oyinchi.kamera) or not oyinchi.kamera.current:
 		xatolar.append("Personaj yoki uchinchi shaxs kamerasi yaratilmagan")
 	elif oyinchi.oyoq_pivotlari.size() != 2 or oyinchi.qol_pivotlari.size() != 2:
@@ -2268,11 +2333,11 @@ func _self_test() -> void:
 		xatolar.append("Trafik soni noto‘g‘ri")
 	if get_tree().get_nodes_in_group("piyoda").size() != 44:
 		xatolar.append("Piyodalar soni noto‘g‘ri")
-	if get_tree().get_nodes_in_group("svetofor").size() != 100:
+	if get_tree().get_nodes_in_group("svetofor").size() != 120:
 		xatolar.append("Svetoforlar to‘liq yaratilmagan")
 	if get_tree().get_nodes_in_group("tungi_muhit").size() != 1:
 		xatolar.append("Doimiy tungi muhit yaratilmagan")
-	if get_tree().get_nodes_in_group("shahar_chirogi").size() != 40:
+	if get_tree().get_nodes_in_group("shahar_chirogi").size() != 46:
 		xatolar.append("Ko‘cha yoritgichlari to‘liq yaratilmagan")
 	if get_tree().get_nodes_in_group("avtomobil_farasi").size() != 17:
 		xatolar.append("Avtomobil faralari to‘liq yaratilmagan")
@@ -2284,11 +2349,11 @@ func _self_test() -> void:
 		xatolar.append("Yo‘l navigatsiya grafigi yaratilmagan")
 	else:
 		var graf_holati: Dictionary = yol_grafi.holat_ol()
-		if int(graf_holati.get("marshrutlar", 0)) != 6 or int(graf_holati.get("tugunlar", 0)) < 100 or not bool(graf_holati.get("ong_tomonlama", false)):
+		if int(graf_holati.get("marshrutlar", 0)) != 9 or int(graf_holati.get("tugunlar", 0)) < 150 or not bool(graf_holati.get("ong_tomonlama", false)):
 			xatolar.append("O‘ng tomonlama yo‘l grafigi to‘liq qurilmagan")
 	if get_tree().get_nodes_in_group("dunyo_chegarasi").size() != 4:
 		xatolar.append("Ko‘rinmas xarita chegaralari yaratilmagan")
-	if get_tree().get_nodes_in_group("landmark").size() < 8:
+	if get_tree().get_nodes_in_group("landmark").size() < 18:
 		xatolar.append("Toshkent hududlarining original landmarklari to‘liq yaratilmagan")
 	var yol_chetidagi_obyektlar := get_tree().get_nodes_in_group("yol_chetidagi_obyekt")
 	if yol_chetidagi_obyektlar.size() != 71:
@@ -2310,11 +2375,28 @@ func _self_test() -> void:
 		transport_turlari[String(trafik.get("transport_turi"))] = true
 	if transport_turlari.size() != 10:
 		xatolar.append("O‘nta transport profili trafikda ishlatilmadi")
+	var sharqiy_trafik_marshrutlari := 0
+	for trafik in get_tree().get_nodes_in_group("trafik"):
+		var sharqiy_marshrut := false
+		for nuqta in trafik.yol:
+			if nuqta.x > DUNYO_CHEGARASI:
+				sharqiy_marshrut = true
+				break
+		if sharqiy_marshrut:
+			sharqiy_trafik_marshrutlari += 1
+	if sharqiy_trafik_marshrutlari < 3:
+		xatolar.append("Traffic AI yangi hudud yo‘llariga integratsiya qilinmagan")
 	var npc_turlari: Dictionary = {}
 	for piyoda in get_tree().get_nodes_in_group("piyoda"):
 		npc_turlari[String(piyoda.get("npc_turi"))] = true
 	if npc_turlari.size() != 7:
 		xatolar.append("Yettita NPC roli yaratilmagan")
+	var sharqiy_npclar := 0
+	for piyoda in get_tree().get_nodes_in_group("piyoda"):
+		if piyoda.global_position.x > DUNYO_CHEGARASI:
+			sharqiy_npclar += 1
+	if sharqiy_npclar < 5:
+		xatolar.append("NPClar yangi Sharqiy xiyobon hududiga integratsiya qilinmagan")
 	if not is_instance_valid(tarjima) or tarjima.mavjud_tillar().size() != 3:
 		xatolar.append("Uch tilli localization arxitekturasi yaratilmagan")
 	if not is_instance_valid(hud_yozuvi) or not is_instance_valid(topshiriq_yozuvi) or not is_instance_valid(minimap):
@@ -2342,6 +2424,24 @@ func _self_test() -> void:
 		xatolar.append("Kirish menyusida by JMJ gems yozuvi topilmadi")
 	if not is_instance_valid(inventar_qatlami) or not is_instance_valid(dokon_qatlami):
 		xatolar.append("Inventar yoki do‘kon oynasi yaratilmagan")
+	if minimap.dunyo_max.x < DUNYO_MAX_X or katta_xarita.dunyo_max.x < DUNYO_MAX_X:
+		xatolar.append("Yangi hudud mini-xarita yoki katta xaritaga ulanmagan")
+	var eski_player_joyi := oyinchi.global_position
+	oyinchi.holat_qoy({"position": [150.0, 0.2, 10.0], "rotation_y": 0.0})
+	if absf(oyinchi.global_position.x - 150.0) > 0.01:
+		xatolar.append("Save v4 yangi hududdagi player pozitsiyasini tiklay olmadi")
+	if is_instance_valid(dunyo_oqimi):
+		dunyo_oqimi._yangila(true)
+		var faol_sharqiy_chunk := false
+		for chunk in get_tree().get_nodes_in_group("phase8_chunk"):
+			if chunk.visible:
+				faol_sharqiy_chunk = true
+				break
+		if not faol_sharqiy_chunk:
+			xatolar.append("Yangi hudud chunk streaming orqali faollashmadi")
+	oyinchi.global_position = eski_player_joyi
+	if is_instance_valid(dunyo_oqimi):
+		dunyo_oqimi._yangila(true)
 
 	_asosiy_menyuni_och()
 	if not get_tree().paused or not asosiy_menyu.visible:
@@ -2499,7 +2599,7 @@ func _self_test() -> void:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9+streaming landmark=13 interyer=3 navigatsiya=6_marshrut tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=40 fara=17 transport=10_tur+270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+egallanadi parvoz=yoq piyoda=44+7_rol+FSM+suhbat+zarba_uchishi svetofor=100 dokon=6 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+kesh kamera=silliq+avto_old+collision missiya=7+fail+retry xarita=mini+toliq sozlama=grafika+ekran+FPS intro=JMJ localization=3_til save_v4=OK")
+		print("SELF_TEST_OK: dunyo=278x208 chunk=12+streaming phase8_sharqiy=3_chunk+5_landmark landmark=18 interyer=3 navigatsiya=9_marshrut tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=46 fara=17 transport=10_tur+270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+yangi_hudud+egallanadi parvoz=yoq piyoda=44+sharqiy_hudud+7_rol+FSM+suhbat+zarba_uchishi svetofor=120 dokon=6 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+MultiMesh+kesh+bosqichli_qurilish kamera=silliq+avto_old+collision missiya=7+fail+retry xarita=mini+toliq+kengaygan sozlama=grafika+ekran+FPS intro=JMJ localization=3_til save_v4=eski_mos+yangi_hudud")
 		audio_tizimi.tozalash()
 		await get_tree().process_frame
 		await get_tree().process_frame

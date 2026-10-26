@@ -22,7 +22,10 @@ func _graf_qur() -> void:
 		[-70.0, 35.0, -70.0, 35.0],
 		[-35.0, 70.0, -35.0, 70.0],
 		[-70.0, 0.0, 0.0, 70.0],
-		[0.0, 70.0, -70.0, 0.0]
+		[0.0, 70.0, -70.0, 0.0],
+		[70.0, 140.0, -70.0, 70.0],
+		[70.0, 140.0, -35.0, 35.0],
+		[70.0, 140.0, 0.0, 70.0]
 	]:
 		var marshrut := _tortburchak_marshrut(float(chegara[0]), float(chegara[1]), float(chegara[2]), float(chegara[3]))
 		marshrutlar.append(marshrut)

@@ -3,6 +3,10 @@ extends Control
 var oyinchi: Node3D
 var maqsad: Node3D
 var dunyo_radiusi := 104.0
+var dunyo_min := Vector2(-104.0, -104.0)
+var dunyo_max := Vector2(174.0, 104.0)
+var x_yollar := [-70.0, -35.0, 0.0, 35.0, 70.0, 140.0]
+var z_yollar := [-70.0, -35.0, 0.0, 35.0, 70.0]
 var zoom := 1.0
 var yangilash_vaqti := 0.0
 
@@ -17,7 +21,9 @@ const HUDUDLAR := [
 	["MINOR", Vector2(87, 52), Color("6ed8d5")],
 	["TUNGI SAYILGOH", Vector2(52, 87), Color("ef72d8")],
 	["VOKZAL", Vector2(-52, 87), Color("d1aa74")],
-	["METRO", Vector2(87, -87), Color("55b8ef")]
+	["METRO", Vector2(87, -87), Color("55b8ef")],
+	["SHARQIY XIYOBON", Vector2(140, 0), Color("61d9ee")],
+	["YANGI BIZNES", Vector2(122, -18), Color("8bc8ff")]
 ]
 
 func _ready() -> void:
@@ -42,21 +48,23 @@ func _gui_input(event: InputEvent) -> void:
 
 func _dunyo_nuqta(p: Vector2) -> Vector2:
 	var markaz := size * 0.5
-	var fokus := Vector2.ZERO
+	var fokus := (dunyo_min + dunyo_max) * 0.5
 	if zoom > 1.0 and is_instance_valid(oyinchi):
 		fokus = Vector2(oyinchi.global_position.x, oyinchi.global_position.z)
-	var masshtab := minf(size.x, size.y) / (dunyo_radiusi * 2.25) * zoom
+	var dunyo_hajmi := dunyo_max - dunyo_min
+	var masshtab := minf(size.x / (dunyo_hajmi.x * 1.12), size.y / (dunyo_hajmi.y * 1.12)) * zoom
 	return markaz + (p - fokus) * masshtab
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.015, 0.035, 0.055, 0.97), true)
 	var yol_rangi := Color(0.34, 0.39, 0.44, 0.95)
-	for koordinata in [-70.0, -35.0, 0.0, 35.0, 70.0]:
-		var a := _dunyo_nuqta(Vector2(-104, koordinata))
-		var b := _dunyo_nuqta(Vector2(104, koordinata))
+	for z in z_yollar:
+		var a := _dunyo_nuqta(Vector2(dunyo_min.x, z))
+		var b := _dunyo_nuqta(Vector2(dunyo_max.x, z))
 		draw_line(a, b, yol_rangi, 12.0 * zoom)
-		a = _dunyo_nuqta(Vector2(koordinata, -104))
-		b = _dunyo_nuqta(Vector2(koordinata, 104))
+	for x in x_yollar:
+		var a := _dunyo_nuqta(Vector2(x, dunyo_min.y))
+		var b := _dunyo_nuqta(Vector2(x, dunyo_max.y))
 		draw_line(a, b, yol_rangi, 12.0 * zoom)
 	for hudud in HUDUDLAR:
 		var nuqta := _dunyo_nuqta(hudud[1])

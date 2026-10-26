@@ -46,6 +46,10 @@ var hujum_zarba_bajarildi := false
 var joriy_hujum_sozlamasi: Dictionary = {}
 var zarar_immun_vaqti := 0.0
 var hayot_vaqti := 0.0
+var dunyo_min_x := -103.0
+var dunyo_max_x := 173.0
+var dunyo_min_z := -103.0
+var dunyo_max_z := 103.0
 
 func _ready() -> void:
 	name = "Oyinchi"
@@ -480,7 +484,7 @@ func holat_qoy(data: Dictionary) -> void:
 			var y := float(p[1])
 			var z := float(p[2])
 			if is_finite(x) and is_finite(y) and is_finite(z):
-				global_position = Vector3(clampf(x, -103.0, 103.0), clampf(y, -0.5, 12.0), clampf(z, -103.0, 103.0))
+				global_position = Vector3(clampf(x, dunyo_min_x, dunyo_max_x), clampf(y, -0.5, 12.0), clampf(z, dunyo_min_z, dunyo_max_z))
 	var saqlangan_burilish := float(data.get("rotation_y", 0.0))
 	rotation.y = saqlangan_burilish if is_finite(saqlangan_burilish) else 0.0
 	kamera_maqsad_yaw = rotation.y
