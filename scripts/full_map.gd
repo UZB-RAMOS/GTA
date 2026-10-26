@@ -12,7 +12,12 @@ const HUDUDLAR := [
 	["CHORSU", Vector2(-18, -18), Color("64d4a1")],
 	["CHILONZOR", Vector2(-52, 53), Color("e79768")],
 	["YUNUSOBOD", Vector2(86, -52), Color("af9cf4")],
-	["SERGELI", Vector2(-52, -52), Color("e7a6ba")]
+	["SERGELI", Vector2(-52, -52), Color("e7a6ba")],
+	["MUSTAQILLIK", Vector2(18, 87), Color("f1d36c")],
+	["MINOR", Vector2(87, 52), Color("6ed8d5")],
+	["TUNGI SAYILGOH", Vector2(52, 87), Color("ef72d8")],
+	["VOKZAL", Vector2(-52, 87), Color("d1aa74")],
+	["METRO", Vector2(87, -87), Color("55b8ef")]
 ]
 
 func _ready() -> void:
@@ -60,6 +65,12 @@ func _draw() -> void:
 	for dokon in get_tree().get_nodes_in_group("dokon"):
 		var d := _dunyo_nuqta(Vector2(dokon.global_position.x, dokon.global_position.z))
 		draw_rect(Rect2(d - Vector2(5, 5), Vector2(10, 10)), Color("68f0a4"), true)
+	for interyer in get_tree().get_nodes_in_group("interyer"):
+		var ichki := _dunyo_nuqta(Vector2(interyer.global_position.x, interyer.global_position.z))
+		draw_rect(Rect2(ichki - Vector2(5, 5), Vector2(10, 10)), Color("f0b868"), false, 2.0)
+	for garaj in get_tree().get_nodes_in_group("garaj"):
+		var g := _dunyo_nuqta(Vector2(garaj.global_position.x, garaj.global_position.z))
+		draw_circle(g, 7.0, Color("8db6ff"), false, 2.0)
 	if is_instance_valid(maqsad) and maqsad.visible:
 		var m := _dunyo_nuqta(Vector2(maqsad.global_position.x, maqsad.global_position.z))
 		draw_circle(m, 10.0, Color("ffd84f"), false, 3.0)

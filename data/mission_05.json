@@ -1,0 +1,31 @@
+{
+  "id": "tezkor_yetkazish_05",
+  "title": "Tezkor yetkazib berish",
+  "stages": [
+    {
+      "id": "omborga_bor",
+      "type": "reach_area",
+      "text": "Chilonzor omboriga boring",
+      "target": [-18.0, 0.2, 53.0]
+    },
+    {
+      "id": "qutini_ol",
+      "type": "collect_item",
+      "item_id": "buyurtma_qutisi",
+      "text": "Yorqin buyurtma qutisini oling",
+      "target": [-11.0, 0.2, 59.0]
+    },
+    {
+      "id": "ofisga_yetkaz",
+      "type": "reach_area_vehicle",
+      "text": "Buyurtmani Tashkent City ofisiga olib boring",
+      "target": [87.0, 0.2, 18.0]
+    },
+    {
+      "id": "complete",
+      "type": "complete",
+      "text": "Yetkazib berish bajarildi! Mukofot: 38 000 so‘m",
+      "reward": 38000
+    }
+  ]
+}

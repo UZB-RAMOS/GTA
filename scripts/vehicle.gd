@@ -15,6 +15,8 @@ signal vayron_boldi
 @export var burilish_tezligi := 1.65
 @export var kuzov_rangi := Color("1769aa")
 @export var buzilmas := true
+@export var transport_turi := "sedan"
+@export var transport_id := "j_m_j_shahar_sedani"
 
 var boshqarilmoqda := false
 var haydovchi: CharacterBody3D
@@ -42,6 +44,7 @@ func _ready() -> void:
 	floor_stop_on_slope = true
 	safe_margin = 0.04
 	_yarat_kuzov()
+	_model_profilini_qollash()
 	tiklash_timeri = Timer.new()
 	tiklash_timeri.name = "AvtomatikTamir"
 	tiklash_timeri.one_shot = true
@@ -320,6 +323,42 @@ func _eshik_animatsiyasi(_kirishmi: bool) -> void:
 
 func tezlik_kmh() -> int:
 	return int(abs(joriy_tezlik) * 3.6)
+
+func _model_profilini_qollash() -> void:
+	var profillar := {
+		"sedan": Vector3(1.0, 1.0, 1.0),
+		"hatchback": Vector3(0.98, 1.02, 0.87),
+		"sport": Vector3(1.07, 0.82, 1.06),
+		"suv": Vector3(1.10, 1.22, 1.08),
+		"minivan": Vector3(1.12, 1.25, 1.25)
+	}
+	var masshtab: Vector3 = profillar.get(transport_turi, Vector3.ONE)
+	if is_instance_valid(kuzov_root):
+		kuzov_root.scale = masshtab
+		kuzov_root.name = "JMJ_" + transport_turi.capitalize()
+	var collider := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if is_instance_valid(collider) and collider.shape is BoxShape3D:
+		collider.shape.size = Vector3(1.92 * masshtab.x, 1.28 * masshtab.y, 4.12 * masshtab.z)
+		collider.position.y = 0.74 * masshtab.y
+	match transport_turi:
+		"sport":
+			maksimal_tezlik = maxf(maksimal_tezlik, 82.0)
+			tezlanish = maxf(tezlanish, 19.0)
+		"suv":
+			maksimal_tezlik = maxf(maksimal_tezlik, 68.0)
+			maksimal_mustahkamlik = 210
+			mustahkamlik = maksimal_mustahkamlik
+		"hatchback":
+			burilish_tezligi = maxf(burilish_tezligi, 1.82)
+
+func transport_holati_ol() -> Dictionary:
+	return {
+		"id": transport_id,
+		"type": transport_turi,
+		"position": [global_position.x, global_position.y, global_position.z],
+		"rotation_y": rotation.y,
+		"durability": mustahkamlik
+	}
 
 func _material(rang: Color, roughness := 0.72, metallic := 0.0) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

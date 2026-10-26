@@ -12,10 +12,14 @@ const WeatherSystemScript = preload("res://scripts/weather_system.gd")
 const WorldStreamerScript = preload("res://scripts/world_streamer.gd")
 const FullMapScript = preload("res://scripts/full_map.gd")
 const AudioSystemScript = preload("res://scripts/audio_system.gd")
+const NavigationGraphScript = preload("res://scripts/navigation_graph.gd")
+const InteractiveInteriorScript = preload("res://scripts/interactive_interior.gd")
+const LocalizationScript = preload("res://scripts/localization.gd")
 const AsphaltTexture = preload("res://assets/textures/asphalt_wet_original.png")
 const FacadeTexture = preload("res://assets/textures/toshkent_facade_night_original.png")
 
 const SAVE_PATH := "user://toshkent_sarguzashti_save.json"
+const SAVE_BACKUP_PATH := "user://toshkent_sarguzashti_save_backup.json"
 const DUNYO_CHEGARASI := 104.0
 const DUNYO_HAJMI := 210.0
 const CHUNK_HAJMI := 70.0
@@ -78,6 +82,16 @@ var ovoz_db := 0.0
 var intro_qatlami: ColorRect
 var intro_faol := false
 var audio_tizimi: Node
+var yol_grafi: Node
+var tarjima: Node
+var egalikdagi_transportlar: Array[String] = ["j_m_j_shahar_sedani"]
+var umumiy_inventar: Dictionary = {}
+var missiya_buyumlari: Array[String] = []
+var missiya_qolgan_vaqt := 0.0
+var missiya_muvaffaqiyatsiz := false
+var npc_suhbat_soni := 0
+var oyin_vaqti := 0.0
+var fps_chegarasi := 60
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -87,7 +101,10 @@ func _ready() -> void:
 	_muhit_yarat()
 	_shahar_yarat()
 	_dokonlar_yarat()
+	_interyerlar_yarat()
 	_oyinchi_yarat()
+	_tarjima_yarat()
+	_yol_grafini_yarat()
 	_ob_havo_yarat()
 	_audio_tizimini_yarat()
 	_dunyo_oqimini_yarat()
@@ -119,6 +136,8 @@ func _ready() -> void:
 	elif argumentlar.has("--self-test"):
 		_self_test.call_deferred()
 	elif ishlash_testi:
+		_grafika_sifati_tanlandi(0)
+		Engine.max_fps = 60
 		ishlash_test_boshlanishi = Time.get_ticks_msec()
 	else:
 		_asosiy_menyuni_och()
@@ -148,6 +167,7 @@ func _kiritishlarni_sozla() -> void:
 	_action_key("qurol_1", KEY_1)
 	_action_key("qurol_2", KEY_2)
 	_action_key("qurol_3", KEY_3)
+	_action_key("qayta_urinish", KEY_R)
 	_action_mouse("hujum", MOUSE_BUTTON_LEFT)
 
 func _action_key(action: StringName, tugma: Key) -> void:
@@ -234,7 +254,27 @@ func _shahar_yarat() -> void:
 	for x in markazlar:
 		for z in markazlar:
 			var blok := Vector2(x, z)
-			if blok.distance_to(Vector2(-20, -18)) < 12.0 or blok.distance_to(Vector2(18, -18)) < 12.0 or blok.distance_to(Vector2(18, 18)) < 12.0 or blok.distance_to(Vector2(-52, 53)) < 12.0 or blok.distance_to(Vector2(54, -52)) < 12.0 or blok.distance_to(Vector2(52, 52)) < 12.0 or blok.distance_to(Vector2(18, -52)) < 12.0 or blok.distance_to(Vector2(87, -52)) < 12.0 or blok.distance_to(Vector2(-52, -52)) < 12.0 or blok.distance_to(Vector2(-87, 52)) < 12.0:
+			if blok.distance_to(Vector2(-20, -18)) < 12.0 \
+			or blok.distance_to(Vector2(18, -18)) < 12.0 \
+			or blok.distance_to(Vector2(18, 18)) < 12.0 \
+			or blok.distance_to(Vector2(-52, 53)) < 12.0 \
+			or blok.distance_to(Vector2(54, -52)) < 12.0 \
+			or blok.distance_to(Vector2(52, 18)) < 12.0 \
+			or blok.distance_to(Vector2(-52, -18)) < 12.0 \
+			or blok.distance_to(Vector2(-18, 53)) < 12.0 \
+			or blok.distance_to(Vector2(52, 52)) < 12.0 \
+			or blok.distance_to(Vector2(18, -52)) < 12.0 \
+			or blok.distance_to(Vector2(87, -52)) < 12.0 \
+			or blok.distance_to(Vector2(-52, -52)) < 12.0 \
+			or blok.distance_to(Vector2(-87, 52)) < 12.0 \
+			or blok.distance_to(Vector2(-18, -52)) < 12.0 \
+			or blok.distance_to(Vector2(-87, -18)) < 12.0 \
+			or blok.distance_to(Vector2(87, 18)) < 12.0 \
+			or blok.distance_to(Vector2(18, 87)) < 12.0 \
+			or blok.distance_to(Vector2(87, 52)) < 12.0 \
+			or blok.distance_to(Vector2(52, 87)) < 12.0 \
+			or blok.distance_to(Vector2(-52, 87)) < 12.0 \
+			or blok.distance_to(Vector2(87, -87)) < 12.0:
 				continue
 			var balandlik := rng.randf_range(5.0, 15.0)
 			var hajm := Vector3(rng.randf_range(7.0, 10.5), balandlik, rng.randf_range(7.0, 10.5))
@@ -402,6 +442,48 @@ func _tuman_landmarklari_yarat(parent: Node3D) -> void:
 		for x in [-4.0, -1.35, 1.35, 4.0]:
 			_vizual_quti_material(massiv, Vector3(x, -4.5 + qavat * 2.7, -4.05), Vector3(1.4, 1.2, 0.08), yoniq if (qavat + int(x)) % 2 == 0 else shisha)
 	_korsatkich_yarat(parent, chilonzor_p + Vector3(0, 14.0, 0), "CHILONZOR", Color("8b532f"))
+
+	# Mustaqillik maydonidan ilhomlangan original tungi arkada.
+	var maydon_p := Vector3(18, 0, 87)
+	var maydon := _statik_quti(_chunk_uchun_parent(parent, maydon_p), "MustaqillikArkadasi", maydon_p + Vector3(0, 0.12, 0), Vector3(11, 0.24, 9), Color("b7aa90"))
+	maydon.add_to_group("landmark")
+	for x in [-3.4, 3.4]:
+		_vizual_quti(maydon, Vector3(x, 2.7, 0), Vector3(0.8, 5.4, 0.8), beton)
+	_vizual_quti_material(maydon, Vector3(0, 5.35, 0), Vector3(8.0, 0.55, 1.0), yoniq)
+	_korsatkich_yarat(parent, maydon_p + Vector3(0, 7.0, 0), "MUSTAQILLIK MAYDONI", Color("8f762f"))
+
+	# Minor uslubidan ilhomlangan, real inshoot nusxasi bo‘lmagan masjid silueti.
+	var minor_p := Vector3(87, 0, 52)
+	var minor := _statik_quti(_chunk_uchun_parent(parent, minor_p), "MinorMaydoni", minor_p + Vector3(0, 0.15, 0), Vector3(10, 0.3, 9), Color("dad9cf"))
+	minor.add_to_group("landmark")
+	_vizual_quti(minor, Vector3(0, 2.0, 0.7), Vector3(6.8, 3.7, 5.2), Color("dfe5e3"))
+	_vizual_sfera(minor, Vector3(0, 4.55, 0.7), Vector3(3.0, 1.35, 3.0), _material(Color("6ac7ce"), 0.30))
+	for x in [-3.6, 3.6]:
+		_vizual_silindr(minor, Vector3(x, 5.4, 0.7), 0.34, 9.5, _material(Color("dfe5e3"), 0.54))
+	_korsatkich_yarat(parent, minor_p + Vector3(0, 7.5, 0), "MINOR SAYR HUDUDI", Color("338c96"))
+
+	# Tungi oilaviy sayilgoh va neon darvoza.
+	var sayilgoh_p := Vector3(52, 0, 87)
+	var sayilgoh := _statik_quti(_chunk_uchun_parent(parent, sayilgoh_p), "TungiSayilgoh", sayilgoh_p + Vector3(0, 0.12, 0), Vector3(11, 0.24, 9), Color("423451"))
+	sayilgoh.add_to_group("landmark")
+	for x in [-4.0, 4.0]:
+		_vizual_quti_material(sayilgoh, Vector3(x, 2.5, 0), Vector3(0.55, 5.0, 0.55), _emissive_material(Color("e64fd4" if x < 0 else "43d9ef"), 1.8))
+	_vizual_quti_material(sayilgoh, Vector3(0, 4.8, 0), Vector3(8.5, 0.45, 0.55), _emissive_material(Color("f1c84f"), 1.6))
+	_korsatkich_yarat(parent, sayilgoh_p + Vector3(0, 6.2, 0), "TUNGI SAYILGOH", Color("a4469e"))
+
+	# Temiryo‘l vokzali va metro kirishlari.
+	var vokzal_p := Vector3(-52, 0, 87)
+	var vokzal := _statik_quti(_chunk_uchun_parent(parent, vokzal_p), "ToshkentVokzali", vokzal_p + Vector3(0, 2.6, 0), Vector3(11, 5.2, 7.5), Color("756a5e"))
+	vokzal.add_to_group("landmark")
+	for x in [-3.5, 0.0, 3.5]:
+		_vizual_quti_material(vokzal, Vector3(x, 0.2, -3.8), Vector3(2.2, 2.6, 0.08), yoniq)
+	_korsatkich_yarat(parent, vokzal_p + Vector3(0, 6.3, 0), "TEMIRYO‘L VOKZALI", Color("8b6b3d"))
+
+	var metro_p := Vector3(87, 0, -87)
+	var metro := _statik_quti(_chunk_uchun_parent(parent, metro_p), "MetroKirish", metro_p + Vector3(0, 1.4, 0), Vector3(7.0, 2.8, 5.5), Color("334b59"))
+	metro.add_to_group("landmark")
+	_vizual_quti_material(metro, Vector3(0, 0.15, -2.8), Vector3(4.2, 1.8, 0.08), _emissive_material(Color("3aaee8"), 1.6))
+	_korsatkich_yarat(parent, metro_p + Vector3(0, 4.2, 0), "METRO BEKATI", Color("2f7da3"))
 
 func _ob_havo_yarat() -> void:
 	ob_havo = WeatherSystemScript.new()
@@ -591,6 +673,16 @@ func _chegara_yarat(parent: Node3D) -> void:
 		shakl.size = devorlar[i][1]
 		collider.shape = shakl
 		body.add_child(collider)
+	# Ko‘rinmas devor oldidagi qurilish panjarasi va tungi markerlar chegarani tabiiy ko‘rsatadi.
+	var tik_joylar: Array[Vector3] = []
+	var yotiq_joylar: Array[Vector3] = []
+	for koordinata in range(-96, 97, 12):
+		tik_joylar.append(Vector3(-102.4, 1.0, koordinata))
+		tik_joylar.append(Vector3(102.4, 1.0, koordinata))
+		yotiq_joylar.append(Vector3(koordinata, 1.0, -102.4))
+		yotiq_joylar.append(Vector3(koordinata, 1.0, 102.4))
+	_quti_multimesh(parent, "ChegaraPanjaraTik", Vector3(0.18, 2.0, 7.5), tik_joylar, Color("8b7138"), 150.0)
+	_quti_multimesh(parent, "ChegaraPanjaraYotiq", Vector3(7.5, 2.0, 0.18), yotiq_joylar, Color("8b7138"), 150.0)
 
 func _korsatkich_yarat(parent: Node3D, p: Vector3, matn: String, rang: Color) -> void:
 	var label := Label3D.new()
@@ -714,19 +806,48 @@ func _emissive_material(rang: Color, kuch: float) -> StandardMaterial3D:
 
 func _dokonlar_yarat() -> void:
 	var sozlamalar := [
-		["Chorsu anjomlari", Vector3(18, 0, -18), Color("267f68"), 0.0],
-		["Yangi mahalla marketi", Vector3(-52, 0, 53), Color("2e6f9b"), PI],
-		["Toshkent savdo uyi", Vector3(54, 0, -52), Color("a36135"), -PI / 2.0]
+		["Chorsu oziq-ovqat do‘koni", "oziq_ovqat", Vector3(18, 0, -18), Color("267f68"), 0.0],
+		["Chilonzor kiyim markazi", "kiyim", Vector3(-52, 0, 53), Color("2e6f9b"), PI],
+		["Toshkent anjomlar uyi", "umumiy", Vector3(54, 0, -52), Color("a36135"), -PI / 2.0],
+		["JMJ avtosalon", "avtosalon", Vector3(52, 0, 18), Color("315c82"), PI],
+		["Sergeli texnik servis", "servis", Vector3(-52, 0, -18), Color("6b596f"), 0.0],
+		["Yunusobod aksessuarlar", "umumiy", Vector3(-18, 0, 53), Color("6b7136"), PI]
 	]
 	for i in range(sozlamalar.size()):
 		var dokon := StoreScript.new()
 		dokon.process_mode = Node.PROCESS_MODE_PAUSABLE
 		dokon.name = "Dokon_%02d" % i
 		dokon.dokon_nomi = sozlamalar[i][0]
-		dokon.position = sozlamalar[i][1]
-		dokon.dokon_rangi = sozlamalar[i][2]
-		dokon.rotation.y = sozlamalar[i][3]
+		dokon.dokon_turi = sozlamalar[i][1]
+		dokon.position = sozlamalar[i][2]
+		dokon.dokon_rangi = sozlamalar[i][3]
+		dokon.rotation.y = sozlamalar[i][4]
 		add_child(dokon)
+
+func _interyerlar_yarat() -> void:
+	var sozlamalar := [
+		["Chorsu ichki bozori", "dokon", Vector3(-18, 0, -52), 0.0, Color("52765f")],
+		["Sergeli servis markazi", "servis", Vector3(-87, 0, -18), PI / 2.0, Color("55636d")],
+		["Tashkent City ofisi", "ofis", Vector3(87, 0, 18), -PI / 2.0, Color("315b75")]
+	]
+	for i in range(sozlamalar.size()):
+		var interyer := InteractiveInteriorScript.new()
+		interyer.name = "Interyer_%02d" % i
+		interyer.joy_nomi = sozlamalar[i][0]
+		interyer.joy_turi = sozlamalar[i][1]
+		interyer.position = sozlamalar[i][2]
+		interyer.rotation.y = sozlamalar[i][3]
+		interyer.asosiy_rang = sozlamalar[i][4]
+		add_child(interyer)
+
+func _tarjima_yarat() -> void:
+	tarjima = LocalizationScript.new()
+	tarjima.name = "Localization"
+	add_child(tarjima)
+
+func _yol_grafini_yarat() -> void:
+	yol_grafi = NavigationGraphScript.new()
+	add_child(yol_grafi)
 
 func _oyinchi_yarat() -> void:
 	oyinchi = PlayerScript.new()
@@ -740,39 +861,38 @@ func _transportlar_yarat() -> void:
 	topshiriq_transporti.process_mode = Node.PROCESS_MODE_PAUSABLE
 	topshiriq_transporti.name = "JMJShaharSedani"
 	topshiriq_transporti.kuzov_rangi = Color("263f59")
+	topshiriq_transporti.transport_turi = "sedan"
+	topshiriq_transporti.transport_id = "j_m_j_shahar_sedani"
 	topshiriq_transporti.position = Vector3(-12, TRANSPORT_YER_SATHI, 2)
 	topshiriq_transporti.rotation.y = PI / 2.0
 	add_child(topshiriq_transporti)
 
-	var tashqi_yol: Array[Vector3] = [
-		Vector3(-70, TRANSPORT_YER_SATHI, -70), Vector3(0, TRANSPORT_YER_SATHI, -70), Vector3(70, TRANSPORT_YER_SATHI, -70), Vector3(70, TRANSPORT_YER_SATHI, 0),
-		Vector3(70, TRANSPORT_YER_SATHI, 70), Vector3(0, TRANSPORT_YER_SATHI, 70), Vector3(-70, TRANSPORT_YER_SATHI, 70), Vector3(-70, TRANSPORT_YER_SATHI, 0)
-	]
-	var ichki_yol: Array[Vector3] = [
-		Vector3(-35, TRANSPORT_YER_SATHI, -35), Vector3(0, TRANSPORT_YER_SATHI, -35), Vector3(35, TRANSPORT_YER_SATHI, -35), Vector3(35, TRANSPORT_YER_SATHI, 0),
-		Vector3(35, TRANSPORT_YER_SATHI, 35), Vector3(0, TRANSPORT_YER_SATHI, 35), Vector3(-35, TRANSPORT_YER_SATHI, 35), Vector3(-35, TRANSPORT_YER_SATHI, 0)
-	]
 	var ranglar := [Color("6f2427"), Color("8a6926"), Color("a5a49e"), Color("285c40"), Color("48345f"), Color("824127"), Color("243f65"), Color("20252a"), Color("85837e"), Color("4c171b")]
+	var transport_turlari := ["sedan", "hatchback", "sport", "suv", "taxi", "bus", "minivan", "delivery", "patrol", "retro"]
 	for i in range(16):
-		var yol: Array[Vector3] = tashqi_yol if i % 2 == 0 else ichki_yol
+		var yol: Array[Vector3] = yol_grafi.marshrut_ol(i)
 		var mashina := TrafficScript.new()
 		mashina.process_mode = Node.PROCESS_MODE_PAUSABLE
 		mashina.name = "Trafik_%02d" % i
 		mashina.rang = ranglar[i % ranglar.size()]
 		mashina.tezlik = 5.8 + (i % 7) * 0.32
+		mashina.transport_turi = transport_turlari[i % transport_turlari.size()]
+		mashina.model_turi = i % transport_turlari.size()
 		mashina.yol = yol.duplicate()
-		mashina.indeks = i % yol.size()
-		mashina.position = yol[i % yol.size()].lerp(yol[(i + 1) % yol.size()], 0.16 + 0.09 * (i % 4))
+		mashina.indeks = (i * 3) % yol.size()
+		mashina.position = yol[mashina.indeks]
 		add_child(mashina)
 
 func _piyodalar_yarat() -> void:
 	var ranglar := [Color("75451f"), Color("28466d"), Color("4b6934"), Color("66334f"), Color("716624"), Color("245142"), Color("642b28")]
+	var npc_turlari := ["oddiy", "sotuvchi", "taksi_haydovchi", "bekat_odami", "mahalla_aholisi", "ishchi", "missiya_personaji"]
 	var markazlar := [Vector3(-25, 0.1, -25), Vector3(19, 0.1, -20), Vector3(-18, 0.1, 20), Vector3(25, 0.1, 25), Vector3(-28, 0.1, 4), Vector3(18, 0.1, 4), Vector3(3, 0.1, 29), Vector3(-84, 0.1, -53), Vector3(-53, 0.1, 53), Vector3(53, 0.1, -53), Vector3(84, 0.1, 52)]
 	for i in range(44):
 		var piyoda := PedestrianScript.new()
 		piyoda.process_mode = Node.PROCESS_MODE_PAUSABLE
 		piyoda.name = "Piyoda_%02d" % i
 		piyoda.rang = ranglar[i % ranglar.size()]
+		piyoda.npc_turi = npc_turlari[i % npc_turlari.size()]
 		piyoda.markaz = markazlar[i % markazlar.size()]
 		piyoda.radius = 6.0 + float(i % 3)
 		piyoda.position = piyoda.markaz + Vector3(float((i % 4) - 2) * 1.5, 0, float((i % 3) - 1) * 1.4)
@@ -817,7 +937,7 @@ func _oyinchi_qayta_tiril() -> void:
 
 func _topshiriq_yukla() -> void:
 	topshiriqlar.clear()
-	for fayl in ["mission_01.json", "mission_02.json", "mission_03.json"]:
+	for fayl in ["mission_01.json", "mission_02.json", "mission_03.json", "mission_04.json", "mission_05.json", "mission_06.json", "mission_07.json"]:
 		var yol: String = "res://data/" + String(fayl)
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(yol))
 		if parsed is Dictionary and parsed.has("stages"):
@@ -906,7 +1026,7 @@ func _hud_yarat() -> void:
 	yordam_yozuvi = Label.new()
 	yordam_yozuvi.position = Vector2(20, 176)
 	yordam_yozuvi.size = Vector2(870, 70)
-	yordam_yozuvi.text = "WASD — harakat  |  Sichqon chap — urish  |  1/2/3 — qurol  |  I — inventar  |  M — xarita\nE — transport/do‘kon/suhbat  |  C/Ctrl — o‘tirish  |  F6 — ob-havo  |  F5/F9 — saqlash/yuklash"
+	yordam_yozuvi.text = "WASD — harakat  |  Sichqon chap — urish  |  1/2/3 — qurol  |  I — inventar  |  M — xarita\nE — transport/do‘kon/suhbat/interyer  |  R — missiyani qayta boshlash  |  F6 — ob-havo  |  F5/F9 — saqlash/yuklash"
 	yordam_yozuvi.add_theme_font_size_override("font_size", 16)
 	yordam_yozuvi.add_theme_color_override("font_color", Color(1, 1, 1, 0.88))
 	canvas.add_child(yordam_yozuvi)
@@ -1008,8 +1128,11 @@ func _dokon_tarkibini_yangila() -> void:
 	for mahsulot in joriy_dokon.mahsulotlar:
 		var tugma := Button.new()
 		var id := String(mahsulot.id)
-		var sotib_olingan: bool = id in ["tayoq", "elektroshoker"] and oyinchi.inventar.has(id)
-		tugma.text = "%s — %s so‘m  •  %s" % [mahsulot.nom, _pul_format(int(mahsulot.narx)), mahsulot.izoh]
+		var bir_martalik: bool = String(mahsulot.get("tur", "")) in ["anjom", "aksessuar", "kiyim", "transport"]
+		var sotib_olingan: bool = (id in ["tayoq", "elektroshoker"] and oyinchi.inventar.has(id)) \
+			or (String(mahsulot.get("tur", "")) == "transport" and egalikdagi_transportlar.has(id)) \
+			or (bir_martalik and int(umumiy_inventar.get(id, 0)) > 0)
+		tugma.text = "[%s] %s — %s so‘m  •  %s" % [mahsulot.get("belgi", "BUYUM"), mahsulot.nom, _pul_format(int(mahsulot.narx)), mahsulot.izoh]
 		if sotib_olingan:
 			tugma.text += "  [SOTIB OLINGAN]"
 			tugma.disabled = true
@@ -1033,8 +1156,15 @@ func _mahsulot_sotib_ol(id: String) -> void:
 	if topildi.is_empty():
 		return
 	var narx := int(topildi.narx)
+	var mahsulot_turi := String(topildi.get("tur", ""))
 	if id in ["tayoq", "elektroshoker"] and oyinchi.inventar.has(id):
 		_xabar("Bu qurol inventarda bor", 2.5)
+		return
+	if mahsulot_turi == "transport" and egalikdagi_transportlar.has(id):
+		_xabar("Bu transport allaqachon sizniki", 2.5)
+		return
+	if mahsulot_turi in ["aksessuar", "kiyim"] and int(umumiy_inventar.get(id, 0)) > 0:
+		_xabar("Bu buyum inventarda bor", 2.5)
 		return
 	if id == "dori" and sogliq >= 100:
 		_xabar("Jon allaqachon to‘liq", 2.5)
@@ -1042,17 +1172,41 @@ func _mahsulot_sotib_ol(id: String) -> void:
 	if id == "zirh" and zirh >= 100:
 		_xabar("Zirh allaqachon to‘liq", 2.5)
 		return
+	var xizmat_transporti: Node = null
+	if id in ["tamir", "tezlik_sozlash"]:
+		xizmat_transporti = _dokon_yaqinidagi_transport(joriy_dokon.global_position)
+		if not is_instance_valid(xizmat_transporti):
+			_xabar("Servis yaqinida transport topilmadi", 3.0)
+			return
+		if id == "tamir" and xizmat_transporti.mustahkamlik >= xizmat_transporti.maksimal_mustahkamlik:
+			_xabar("Transport allaqachon soz", 2.5)
+			return
+		if id == "tezlik_sozlash" and bool(xizmat_transporti.get_meta("tezlik_sozlangan", false)):
+			_xabar("Bu transport oldin sozlangan", 2.5)
+			return
 	if pul < narx:
 		_xabar("Pul yetarli emas", 2.5)
 		return
 	pul -= narx
 	match id:
+		"osh":
+			sogliq = mini(100, sogliq + 25)
 		"dori":
 			sogliq = mini(100, sogliq + 40)
 		"zirh":
 			zirh = mini(100, zirh + 60)
 		"tayoq", "elektroshoker":
 			oyinchi.inventar_qosh(id)
+		"kiyim_tungi", "fonar":
+			umumiy_inventar[id] = int(umumiy_inventar.get(id, 0)) + int(topildi.get("miqdor", 1))
+		"hatchback", "suv", "sport":
+			egalikdagi_transportlar.append(id)
+			_egalikdagi_transport_yarat(id)
+		"tamir":
+			xizmat_transporti.tiklash()
+		"tezlik_sozlash":
+			xizmat_transporti.tezlanish *= 1.08
+			xizmat_transporti.set_meta("tezlik_sozlangan", true)
 	var xabar_matni := "%s sotib olindi" % topildi.nom
 	if id in ["tayoq", "elektroshoker"]:
 		xabar_matni += " va qo‘lga olindi"
@@ -1060,6 +1214,36 @@ func _mahsulot_sotib_ol(id: String) -> void:
 	if is_instance_valid(audio_tizimi):
 		audio_tizimi.ui_signal()
 	_dokon_tarkibini_yangila()
+
+func _dokon_yaqinidagi_transport(joy: Vector3) -> Node:
+	var eng_yaqin: Node
+	var eng_masofa := 196.0
+	for transport in get_tree().get_nodes_in_group("transport"):
+		var masofa: float = transport.global_position.distance_squared_to(joy)
+		if masofa < eng_masofa:
+			eng_masofa = masofa
+			eng_yaqin = transport
+	return eng_yaqin
+
+func _egalikdagi_transport_yarat(tur: String, holat: Dictionary = {}) -> CharacterBody3D:
+	var mashina := VehicleScript.new()
+	mashina.process_mode = Node.PROCESS_MODE_PAUSABLE
+	mashina.name = "Egalikdagi_%s_%02d" % [tur.capitalize(), get_tree().get_nodes_in_group("egalikdagi_transport").size()]
+	mashina.transport_turi = tur
+	mashina.transport_id = tur
+	mashina.buzilmas = true
+	var ranglar := {"hatchback": Color("2f7f66"), "suv": Color("594b73"), "sport": Color("9a332f")}
+	mashina.kuzov_rangi = ranglar.get(tur, Color("365b7a"))
+	var tartib := get_tree().get_nodes_in_group("egalikdagi_transport").size()
+	mashina.position = Vector3(45.0 + float(tartib) * 3.2, TRANSPORT_YER_SATHI, 9.0)
+	mashina.rotation.y = PI
+	if holat.has("position"):
+		var p: Array = holat.position
+		mashina.position = Vector3(float(p[0]), float(p[1]), float(p[2]))
+		mashina.rotation.y = float(holat.get("rotation_y", PI))
+	add_child(mashina)
+	mashina.add_to_group("egalikdagi_transport")
+	return mashina
 
 func _dokon_yop() -> void:
 	dokon_qatlami.visible = false
@@ -1084,7 +1268,14 @@ func _inventar_matn_yangila() -> void:
 		var sozlama: Dictionary = PlayerScript.QUROLLAR.get(id, {})
 		if not sozlama.is_empty():
 			satrlar.append("• %s%s" % [sozlama.nom, "  [TANLANGAN]" if id == oyinchi.faol_qurol else ""])
-	inventar_matni.text = "Jon: %d/100\nZirh: %d/100\nPul: %s so‘m\n\nQurollar:\n%s\n\n1 — Musht   2 — Metall tayoq   3 — Elektroshoker" % [sogliq, zirh, _pul_format(pul), "\n".join(satrlar)]
+	var buyum_satrlar: Array[String] = []
+	for id in umumiy_inventar:
+		buyum_satrlar.append("• %s × %d" % [String(id).replace("_", " ").capitalize(), int(umumiy_inventar[id])])
+	for id in missiya_buyumlari:
+		buyum_satrlar.append("• %s [TOPSHIRIQ]" % String(id).replace("_", " ").capitalize())
+	if buyum_satrlar.is_empty():
+		buyum_satrlar.append("• Hozircha yo‘q")
+	inventar_matni.text = "Jon: %d/100\nZirh: %d/100\nPul: %s so‘m\nTransport: %d ta\n\nQurollar:\n%s\n\nBuyumlar:\n%s\n\n1 — Musht   2 — Metall tayoq   3 — Elektroshoker" % [sogliq, zirh, _pul_format(pul), egalikdagi_transportlar.size(), "\n".join(satrlar), "\n".join(buyum_satrlar)]
 
 func _inventar_yop() -> void:
 	inventar_qatlami.visible = false
@@ -1197,6 +1388,16 @@ func _sozlamalar_oynasi_yarat(canvas: CanvasLayer) -> void:
 	vsync.button_pressed = true
 	vsync.toggled.connect(_vsync_ozgardi)
 	vbox.add_child(vsync)
+	var fps_label := Label.new()
+	fps_label.text = "FPS chegarasi"
+	vbox.add_child(fps_label)
+	var fps_tanlash := OptionButton.new()
+	fps_tanlash.name = "FPSChegarasi"
+	for qiymat in [30, 45, 60, 120]:
+		fps_tanlash.add_item("%d FPS" % qiymat, qiymat)
+	fps_tanlash.select(2)
+	fps_tanlash.item_selected.connect(_fps_chegarasi_tanlandi)
+	vbox.add_child(fps_tanlash)
 	var yopish := Button.new()
 	yopish.text = "Orqaga"
 	yopish.custom_minimum_size.y = 52
@@ -1237,6 +1438,20 @@ func _grafika_sifati_tanlandi(indeks: int) -> void:
 			fara_masofasi_kv = 5184.0
 			dunyo_oqimi.radiusni_qoy(145.0)
 	ob_havo.sifatni_qoy(grafika_sifati)
+	var piyoda_chegarasi: int = [24, 36, 44][grafika_sifati]
+	var trafik_chegarasi: int = [10, 14, 16][grafika_sifati]
+	var piyodalar := get_tree().get_nodes_in_group("piyoda")
+	for i in range(piyodalar.size()):
+		var faolmi: bool = i < piyoda_chegarasi
+		piyodalar[i].visible = faolmi
+		piyodalar[i].process_mode = Node.PROCESS_MODE_PAUSABLE if faolmi else Node.PROCESS_MODE_DISABLED
+	var trafiklar := get_tree().get_nodes_in_group("trafik")
+	for i in range(trafiklar.size()):
+		var faolmi: bool = i < trafik_chegarasi or trafiklar[i].boshqarilmoqda
+		trafiklar[i].visible = faolmi
+		trafiklar[i].process_mode = Node.PROCESS_MODE_PAUSABLE if faolmi else Node.PROCESS_MODE_DISABLED
+	for chiroq in get_tree().get_nodes_in_group("interyer_chirogi"):
+		chiroq.visible = grafika_sifati > 0
 	_xabar("Grafika sifati yangilandi", 2.5)
 
 func _ob_havo_tanlandi(indeks: int) -> void:
@@ -1254,6 +1469,12 @@ func _fullscreen_ozgardi(yoqilgan: bool) -> void:
 
 func _vsync_ozgardi(yoqilgan: bool) -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if yoqilgan else DisplayServer.VSYNC_DISABLED)
+
+func _fps_chegarasi_tanlandi(indeks: int) -> void:
+	var qiymatlar := [30, 45, 60, 120]
+	fps_chegarasi = qiymatlar[clampi(indeks, 0, qiymatlar.size() - 1)]
+	Engine.max_fps = fps_chegarasi
+	_xabar("FPS chegarasi: %d" % fps_chegarasi, 2.0)
 
 func _intro_oynasi_yarat(canvas: CanvasLayer) -> void:
 	intro_qatlami = ColorRect.new()
@@ -1408,6 +1629,14 @@ func _yangi_oyin() -> void:
 	topshiriq_indeksi = 0
 	bajarilgan_topshiriqlar.clear()
 	ochilgan_hududlar = ["chorsu", "markaz"]
+	egalikdagi_transportlar = ["j_m_j_shahar_sedani"]
+	umumiy_inventar.clear()
+	missiya_buyumlari.clear()
+	missiya_qolgan_vaqt = 0.0
+	missiya_muvaffaqiyatsiz = false
+	npc_suhbat_soni = 0
+	for transport in get_tree().get_nodes_in_group("egalikdagi_transport"):
+		transport.queue_free()
 	topshiriq_yakun_vaqti = 0.0
 	if not topshiriqlar.is_empty():
 		topshiriq = topshiriqlar[0]
@@ -1449,7 +1678,7 @@ func _pauza_menyusi_yarat(canvas: CanvasLayer) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	pauza_qatlami.add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(470, 440)
+	panel.custom_minimum_size = Vector2(470, 500)
 	center.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 15)
@@ -1476,6 +1705,10 @@ func _pauza_menyusi_yarat(canvas: CanvasLayer) -> void:
 	yukla.text = "Saqlangan o‘yinni yuklash"
 	yukla.pressed.connect(_yuklash)
 	vbox.add_child(yukla)
+	var qayta := Button.new()
+	qayta.text = "Joriy topshiriqni qayta boshlash"
+	qayta.pressed.connect(_qayta_urinish)
+	vbox.add_child(qayta)
 	var sozlamalar := Button.new()
 	sozlamalar.text = "Grafika va ekran sozlamalari"
 	sozlamalar.pressed.connect(_sozlamalarni_och.bind(false))
@@ -1499,6 +1732,12 @@ func _pauza_menyusi_yarat(canvas: CanvasLayer) -> void:
 	vbox.add_child(chiqish)
 
 func _process(delta: float) -> void:
+	if not get_tree().paused:
+		oyin_vaqti += delta
+		if missiya_qolgan_vaqt > 0.0 and not missiya_muvaffaqiyatsiz:
+			missiya_qolgan_vaqt = maxf(0.0, missiya_qolgan_vaqt - delta)
+			if missiya_qolgan_vaqt <= 0.0:
+				_topshiriq_muvaffaqiyatsiz("Vaqt tugadi")
 	if not get_tree().paused and belgi and belgi.visible:
 		belgi.rotation.y += delta * 0.8
 		belgi_mesh.position.y = 0.18 + sin(Time.get_ticks_msec() * 0.003) * 0.08
@@ -1602,9 +1841,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_saqlash()
 	elif event.is_action_pressed("yuklash"):
 		_yuklash()
+	elif event.is_action_pressed("qayta_urinish") and missiya_muvaffaqiyatsiz:
+		_qayta_urinish()
 
 func _topshiriqni_tekshir() -> void:
-	if topshiriq.is_empty() or bosqich >= topshiriq.stages.size():
+	if missiya_muvaffaqiyatsiz or topshiriq.is_empty() or bosqich >= topshiriq.stages.size():
 		return
 	var stage: Dictionary = topshiriq.stages[bosqich]
 	var tur := String(stage.get("type", ""))
@@ -1618,13 +1859,29 @@ func _topshiriqni_tekshir() -> void:
 		_topshiriq_bosqichini_qoy(bosqich + 1)
 	elif tur == "reach_area_any_vehicle" and is_instance_valid(oyinchi.joriy_transport) and oyinchi.joriy_transport.global_position.distance_to(belgi.global_position) < 4.5:
 		_topshiriq_bosqichini_qoy(bosqich + 1)
+	elif tur == "timed_reach_any_vehicle" and is_instance_valid(oyinchi.joriy_transport) and oyinchi.joriy_transport.global_position.distance_to(belgi.global_position) < 4.5:
+		_topshiriq_bosqichini_qoy(bosqich + 1)
+	elif tur == "reach_garage_vehicle" and is_instance_valid(oyinchi.joriy_transport) and oyinchi.joriy_transport.global_position.distance_to(belgi.global_position) < 5.5:
+		_topshiriq_bosqichini_qoy(bosqich + 1)
+	elif tur == "collect_item" and oyinchi.global_position.distance_to(belgi.global_position) < 2.3:
+		var buyum_id := String(stage.get("item_id", "missiya_buyumi"))
+		if not missiya_buyumlari.has(buyum_id):
+			missiya_buyumlari.append(buyum_id)
+		_topshiriq_bosqichini_qoy(bosqich + 1)
+	elif tur == "unlock_location" and oyinchi.global_position.distance_to(belgi.global_position) < 3.4:
+		var hudud_id := String(stage.get("location_id", "yangi_hudud"))
+		if not ochilgan_hududlar.has(hudud_id):
+			ochilgan_hududlar.append(hudud_id)
+		_topshiriq_bosqichini_qoy(bosqich + 1)
 
 func _topshiriq_bosqichini_qoy(yangi_bosqich: int, mukofot_ber := true) -> void:
 	if topshiriq.is_empty() or topshiriq.stages.is_empty():
 		return
 	bosqich = clampi(yangi_bosqich, 0, topshiriq.stages.size() - 1)
+	missiya_muvaffaqiyatsiz = false
 	var stage: Dictionary = topshiriq.stages[bosqich]
 	var tur := String(stage.get("type", ""))
+	missiya_qolgan_vaqt = maxf(0.0, float(stage.get("time_limit", 0.0)))
 	if tur == "complete":
 		var id := String(topshiriq.get("id", "topshiriq_%d" % topshiriq_indeksi))
 		if mukofot_ber and not bajarilgan_topshiriqlar.has(id):
@@ -1633,14 +1890,15 @@ func _topshiriq_bosqichini_qoy(yangi_bosqich: int, mukofot_ber := true) -> void:
 		belgi.visible = false
 		_xabar(String(stage.get("text", "Topshiriq bajarildi")), 8.0)
 		if is_instance_valid(audio_tizimi):
-			audio_tizimi.ui_signal()
+			audio_tizimi.missiya_signal(true)
 		if topshiriq_indeksi + 1 < topshiriqlar.size():
 			topshiriq_yakun_vaqti = 4.0
 	else:
 		var target: Array = stage.get("target", [0.0, 0.2, 0.0])
 		belgi.global_position = Vector3(float(target[0]), float(target[1]), float(target[2]))
 		belgi.visible = true
-		belgi_yozuvi.text = "MAQSAD %d/%d" % [bosqich + 1, topshiriq.stages.size() - 1]
+		var belgi_turi := "BUYUM" if tur == "collect_item" else ("SUHBAT" if tur == "talk_to_npc" else "MAQSAD")
+		belgi_yozuvi.text = "%s %d/%d" % [belgi_turi, bosqich + 1, topshiriq.stages.size() - 1]
 		_xabar(String(stage.get("text", "Yangi maqsad")), 3.5)
 		if is_instance_valid(audio_tizimi) and yangi_bosqich > 0:
 			audio_tizimi.ui_signal()
@@ -1653,6 +1911,8 @@ func _keyingi_topshiriqni_boshlash() -> void:
 	topshiriq_indeksi += 1
 	topshiriq = topshiriqlar[topshiriq_indeksi]
 	bosqich = 0
+	missiya_muvaffaqiyatsiz = false
+	missiya_qolgan_vaqt = 0.0
 	match topshiriq_indeksi:
 		1:
 			if not ochilgan_hududlar.has("chilonzor"):
@@ -1666,6 +1926,20 @@ func _keyingi_topshiriqni_boshlash() -> void:
 	_topshiriq_bosqichini_qoy(0, false)
 	_xabar("Yangi topshiriq: %s" % topshiriq.get("title", "Topshiriq"), 5.0)
 
+func _topshiriq_muvaffaqiyatsiz(sabab: String) -> void:
+	missiya_muvaffaqiyatsiz = true
+	missiya_qolgan_vaqt = 0.0
+	belgi.visible = false
+	_xabar("%s: %s. R — qayta urinish" % [tarjima.matn("mission_failed"), sabab], 8.0)
+	if is_instance_valid(audio_tizimi):
+		audio_tizimi.missiya_signal(false)
+
+func _qayta_urinish() -> void:
+	missiya_muvaffaqiyatsiz = false
+	missiya_qolgan_vaqt = 0.0
+	_topshiriq_bosqichini_qoy(0, false)
+	_xabar("Topshiriq qayta boshlandi", 3.0)
+
 func _hud_yangila() -> void:
 	if not hud_yozuvi:
 		return
@@ -1676,11 +1950,17 @@ func _hud_yangila() -> void:
 		holat = "TRANSPORTDA"
 		speed = oyinchi.joriy_transport.tezlik_kmh()
 		transport_holati = "  •  Mashina: BUZILMAS" if oyinchi.joriy_transport.buzilmas else "  •  Mashina: %d/%d" % [oyinchi.joriy_transport.mustahkamlik, oyinchi.joriy_transport.maksimal_mustahkamlik]
-	hud_yozuvi.text = "TOSHKENT SARGUZASHTI\nJon: %d/100  •  Zirh: %d/100\nPul: %s so‘m\nQurol: %s  •  %s%s" % [sogliq, zirh, _pul_format(pul), oyinchi.faol_qurol_nomi(), holat, transport_holati]
+	var shahar_daqiqasi := (21 * 60 + int(oyin_vaqti * 0.25)) % (24 * 60)
+	var vaqt_matni := "%02d:%02d" % [int(shahar_daqiqasi / 60), shahar_daqiqasi % 60]
+	hud_yozuvi.text = "TOSHKENT SARGUZASHTI\nJon: %d/100  •  Zirh: %d/100\nPul: %s so‘m\nQurol: %s  •  %s%s\nVaqt: %s  •  FPS: %d" % [sogliq, zirh, _pul_format(pul), oyinchi.faol_qurol_nomi(), holat, transport_holati, vaqt_matni, Engine.get_frames_per_second()]
 	tezlik_yozuvi.text = "%03d km/soat" % speed if holat == "TRANSPORTDA" else ""
 	if topshiriq and not topshiriq.stages.is_empty():
 		var stage: Dictionary = topshiriq.stages[bosqich]
-		topshiriq_yozuvi.text = "%s — %s" % [topshiriq.get("title", "Topshiriq"), stage.get("text", "")]
+		if missiya_muvaffaqiyatsiz:
+			topshiriq_yozuvi.text = "%s — %s" % [tarjima.matn("mission_failed"), tarjima.matn("retry")]
+		else:
+			var vaqt_qoshimchasi := "  •  %02d:%02d" % [int(missiya_qolgan_vaqt / 60.0), int(missiya_qolgan_vaqt) % 60] if missiya_qolgan_vaqt > 0.0 else ""
+			topshiriq_yozuvi.text = "%s — %s%s" % [topshiriq.get("title", "Topshiriq"), stage.get("text", ""), vaqt_qoshimchasi]
 
 func _pul_format(qiymat: int) -> String:
 	var s := str(qiymat)
@@ -1695,8 +1975,16 @@ func _xabar(matn: String, vaqt := 2.5) -> void:
 		bildirishnoma.text = matn
 		bildirishnoma_vaqti = vaqt
 
-func npc_xabari(matn: String) -> void:
+func npc_xabari(matn: String, _npc_turi := "oddiy") -> void:
+	npc_suhbat_soni += 1
 	_xabar("Shahar aholisi: %s" % matn, 5.0)
+	if not missiya_muvaffaqiyatsiz and not topshiriq.is_empty() and bosqich < topshiriq.stages.size():
+		var stage: Dictionary = topshiriq.stages[bosqich]
+		if String(stage.get("type", "")) == "talk_to_npc" and oyinchi.global_position.distance_to(belgi.global_position) < 12.0:
+			_topshiriq_bosqichini_qoy(bosqich + 1)
+
+func interyer_xabari(joy_nomi: String, ichkarida: bool) -> void:
+	_xabar(tarjima.matn("entered" if ichkarida else "exited", [joy_nomi]), 3.0)
 
 func _pauzani_almashtir() -> void:
 	if get_tree().paused:
@@ -1719,8 +2007,12 @@ func _oyindan_chiqish() -> void:
 	get_tree().quit()
 
 func _saqlash() -> void:
+	var egalik_transport_holatlari: Array[Dictionary] = []
+	for transport in get_tree().get_nodes_in_group("egalikdagi_transport"):
+		if transport.has_method("transport_holati_ol"):
+			egalik_transport_holatlari.append(transport.transport_holati_ol())
 	var data := {
-		"schema_version": 3,
+		"schema_version": 4,
 		"timestamp": Time.get_datetime_string_from_system(),
 		"player": oyinchi.holat_ol(),
 		"mission_index": topshiriq_indeksi,
@@ -1732,11 +2024,17 @@ func _saqlash() -> void:
 		"armor": zirh,
 		"inventory": oyinchi.inventar,
 		"selected_weapon": oyinchi.faol_qurol,
-		"owned_vehicles": ["j_m_j_shahar_sedani"],
+		"owned_vehicles": egalikdagi_transportlar,
+		"owned_vehicle_states": egalik_transport_holatlari,
+		"general_inventory": umumiy_inventar,
+		"mission_items": missiya_buyumlari,
+		"mission_failed": missiya_muvaffaqiyatsiz,
+		"mission_time_left": missiya_qolgan_vaqt,
 		"weather": ob_havo.holat_ol(),
 		"settings": {
 			"graphics_quality": grafika_sifati,
-			"audio_db": ovoz_db
+			"audio_db": ovoz_db,
+			"fps_limit": fps_chegarasi
 		},
 		"vehicle": {
 			"position": [topshiriq_transporti.global_position.x, topshiriq_transporti.global_position.y, topshiriq_transporti.global_position.z],
@@ -1744,6 +2042,11 @@ func _saqlash() -> void:
 			"durability": topshiriq_transporti.mustahkamlik
 		}
 	}
+	if FileAccess.file_exists(SAVE_PATH):
+		var eski_matn := FileAccess.get_file_as_string(SAVE_PATH)
+		var eski_data = JSON.parse_string(eski_matn)
+		if eski_data is Dictionary:
+			_varaq_yoz(SAVE_BACKUP_PATH, eski_matn)
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data, "  "))
@@ -1752,17 +2055,39 @@ func _saqlash() -> void:
 	else:
 		_xabar("Saqlashda xato", 3.0)
 
+func _varaq_yoz(yol: String, matn: String) -> bool:
+	var file := FileAccess.open(yol, FileAccess.WRITE)
+	if not file:
+		return false
+	file.store_string(matn)
+	file.close()
+	return true
+
+func _save_data_oqish(yol: String) -> Dictionary:
+	if not FileAccess.file_exists(yol):
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(yol))
+	if not parsed is Dictionary:
+		return {}
+	var schema := int(parsed.get("schema_version", 0))
+	if schema not in [1, 2, 3, 4] or not parsed.has("player"):
+		return {}
+	return parsed
+
 func _yuklash() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(SAVE_PATH) and not FileAccess.file_exists(SAVE_BACKUP_PATH):
 		_xabar("Saqlangan o‘yin topilmadi", 3.0)
 		return
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	if not parsed is Dictionary:
-		_xabar("Save fayli buzilgan", 3.0)
+	var data := _save_data_oqish(SAVE_PATH)
+	var zaxiradan := false
+	if data.is_empty():
+		data = _save_data_oqish(SAVE_BACKUP_PATH)
+		zaxiradan = not data.is_empty()
+	if data.is_empty():
+		_xabar("Save va zaxira fayli buzilgan", 4.0)
 		return
-	var data: Dictionary = parsed
 	var schema := int(data.get("schema_version", 0))
-	if schema not in [1, 2, 3]:
+	if schema not in [1, 2, 3, 4]:
 		_xabar("Save versiyasi mos emas", 3.0)
 		return
 	if is_instance_valid(oyinchi.joriy_transport):
@@ -1772,6 +2097,28 @@ func _yuklash() -> void:
 	sogliq = clampi(int(data.get("health", 100)), 1, 100)
 	zirh = clampi(int(data.get("armor", 0)), 0, 100)
 	oyinchi.inventar_qoy(data.get("inventory", ["musht"]), String(data.get("selected_weapon", "musht")))
+	umumiy_inventar = data.get("general_inventory", {}).duplicate()
+	missiya_buyumlari.clear()
+	for item in data.get("mission_items", []):
+		missiya_buyumlari.append(String(item))
+	egalikdagi_transportlar.clear()
+	for transport_id in data.get("owned_vehicles", ["j_m_j_shahar_sedani"]):
+		var id := String(transport_id)
+		if not egalikdagi_transportlar.has(id):
+			egalikdagi_transportlar.append(id)
+	if not egalikdagi_transportlar.has("j_m_j_shahar_sedani"):
+		egalikdagi_transportlar.push_front("j_m_j_shahar_sedani")
+	for transport in get_tree().get_nodes_in_group("egalikdagi_transport"):
+		transport.queue_free()
+	var tiklangan_turlar: Array[String] = []
+	for holat in data.get("owned_vehicle_states", []):
+		if holat is Dictionary:
+			var tur := String(holat.get("type", "hatchback"))
+			_egalikdagi_transport_yarat(tur, holat)
+			tiklangan_turlar.append(tur)
+	for id in egalikdagi_transportlar:
+		if id != "j_m_j_shahar_sedani" and not tiklangan_turlar.has(id):
+			_egalikdagi_transport_yarat(id)
 	bajarilgan_topshiriqlar.clear()
 	for id in data.get("completed_missions", []):
 		bajarilgan_topshiriqlar.append(String(id))
@@ -1787,6 +2134,8 @@ func _yuklash() -> void:
 	ovoz_db = clampf(float(settings_data.get("audio_db", 0.0)), -40.0, 0.0)
 	AudioServer.set_bus_volume_db(0, ovoz_db)
 	_grafika_sifati_tanlandi(clampi(int(settings_data.get("graphics_quality", grafika_sifati)), 0, 2))
+	fps_chegarasi = clampi(int(settings_data.get("fps_limit", 60)), 30, 120)
+	Engine.max_fps = fps_chegarasi
 	ob_havo.holat_qoy(data.get("weather", {}))
 	var transport_data: Dictionary = data.get("vehicle", {})
 	topshiriq_transporti.tiklash()
@@ -1798,7 +2147,9 @@ func _yuklash() -> void:
 	if saqlangan_mustahkamlik < topshiriq_transporti.maksimal_mustahkamlik:
 		topshiriq_transporti.zarar_ol(topshiriq_transporti.maksimal_mustahkamlik - saqlangan_mustahkamlik)
 	_topshiriq_bosqichini_qoy(int(data.get("mission_stage", 0)), false)
-	_xabar("Saqlangan o‘yin yuklandi", 3.0)
+	missiya_muvaffaqiyatsiz = bool(data.get("mission_failed", false))
+	missiya_qolgan_vaqt = maxf(0.0, float(data.get("mission_time_left", missiya_qolgan_vaqt)))
+	_xabar(tarjima.matn("save_recovered") if zaxiradan else "Saqlangan o‘yin yuklandi", 4.0 if zaxiradan else 3.0)
 	if get_tree().paused and not asosiy_menyu.visible:
 		_pauzani_yop()
 
@@ -1897,8 +2248,16 @@ func _self_test() -> void:
 		xatolar.append("Ko‘cha yoritgichlari to‘liq yaratilmagan")
 	if get_tree().get_nodes_in_group("avtomobil_farasi").size() != 17:
 		xatolar.append("Avtomobil faralari to‘liq yaratilmagan")
-	if get_tree().get_nodes_in_group("dokon").size() != 3:
-		xatolar.append("Interaktiv do‘konlar yaratilmagan")
+	if get_tree().get_nodes_in_group("dokon").size() != 6:
+		xatolar.append("Oltita turdagi interaktiv do‘konlar yaratilmagan")
+	if get_tree().get_nodes_in_group("interyer").size() != 3 or get_tree().get_nodes_in_group("garaj").size() != 1:
+		xatolar.append("Uchta interyer yoki servis garaji yaratilmagan")
+	if not is_instance_valid(yol_grafi):
+		xatolar.append("Yo‘l navigatsiya grafigi yaratilmagan")
+	else:
+		var graf_holati: Dictionary = yol_grafi.holat_ol()
+		if int(graf_holati.get("marshrutlar", 0)) != 6 or int(graf_holati.get("tugunlar", 0)) < 100 or not bool(graf_holati.get("ong_tomonlama", false)):
+			xatolar.append("O‘ng tomonlama yo‘l grafigi to‘liq qurilmagan")
 	if get_tree().get_nodes_in_group("dunyo_chegarasi").size() != 4:
 		xatolar.append("Ko‘rinmas xarita chegaralari yaratilmagan")
 	if get_tree().get_nodes_in_group("landmark").size() < 8:
@@ -1910,13 +2269,31 @@ func _self_test() -> void:
 		if _yol_ustidami(obyekt.global_position, 0.70):
 			xatolar.append("Ko‘cha jihozi yo‘l ustiga tushib qolgan: %s" % obyekt.name)
 			break
-	if topshiriqlar.size() != 3 or topshiriqlar[0].get("stages", []).size() != 4 or topshiriqlar[1].get("stages", []).size() != 5 or topshiriqlar[2].get("stages", []).size() != 4:
-		xatolar.append("Uchta data-driven topshiriq to‘liq yuklanmadi")
+	var kutilgan_bosqichlar := [4, 5, 4, 4, 4, 3, 4]
+	if topshiriqlar.size() != kutilgan_bosqichlar.size():
+		xatolar.append("Yettita data-driven topshiriq to‘liq yuklanmadi")
+	else:
+		for i in range(kutilgan_bosqichlar.size()):
+			if topshiriqlar[i].get("stages", []).size() != kutilgan_bosqichlar[i]:
+				xatolar.append("%d-topshiriq bosqichlari noto‘g‘ri" % (i + 1))
+				break
+	var transport_turlari: Dictionary = {}
+	for trafik in get_tree().get_nodes_in_group("trafik"):
+		transport_turlari[String(trafik.get("transport_turi"))] = true
+	if transport_turlari.size() != 10:
+		xatolar.append("O‘nta transport profili trafikda ishlatilmadi")
+	var npc_turlari: Dictionary = {}
+	for piyoda in get_tree().get_nodes_in_group("piyoda"):
+		npc_turlari[String(piyoda.get("npc_turi"))] = true
+	if npc_turlari.size() != 7:
+		xatolar.append("Yettita NPC roli yaratilmagan")
+	if not is_instance_valid(tarjima) or tarjima.mavjud_tillar().size() != 3:
+		xatolar.append("Uch tilli localization arxitekturasi yaratilmagan")
 	if not is_instance_valid(hud_yozuvi) or not is_instance_valid(topshiriq_yozuvi) or not is_instance_valid(minimap):
 		xatolar.append("HUD yoki minimap yaratilmagan")
 	if not is_instance_valid(katta_xarita) or not is_instance_valid(xarita_qatlami):
 		xatolar.append("Katta xarita yaratilmagan")
-	if not is_instance_valid(sozlamalar_qatlami) or not is_instance_valid(sozlamalar_qatlami.find_child("GrafikaSifati", true, false)) or not is_instance_valid(sozlamalar_qatlami.find_child("RezolyutsiyaTanlash", true, false)):
+	if not is_instance_valid(sozlamalar_qatlami) or not is_instance_valid(sozlamalar_qatlami.find_child("GrafikaSifati", true, false)) or not is_instance_valid(sozlamalar_qatlami.find_child("RezolyutsiyaTanlash", true, false)) or not is_instance_valid(sozlamalar_qatlami.find_child("FPSChegarasi", true, false)):
 		xatolar.append("Grafika yoki resolution sozlamalari yaratilmagan")
 	if not is_instance_valid(intro_qatlami) or intro_qatlami.find_children("*", "Label", true, false).is_empty():
 		xatolar.append("JMJ intro oynasi yaratilmagan")
@@ -1944,6 +2321,16 @@ func _self_test() -> void:
 	_yangi_oyin()
 	if get_tree().paused or asosiy_menyu.visible:
 		xatolar.append("Yangi o‘yin menyudan to‘g‘ri boshlanmadi")
+	_topshiriq_muvaffaqiyatsiz("self-test")
+	if not missiya_muvaffaqiyatsiz or belgi.visible:
+		xatolar.append("Topshiriq muvaffaqiyatsizlik holati ishlamadi")
+	_qayta_urinish()
+	if missiya_muvaffaqiyatsiz or bosqich != 0 or not belgi.visible:
+		xatolar.append("Topshiriqni qayta boshlash ishlamadi")
+	_fps_chegarasi_tanlandi(0)
+	if fps_chegarasi != 30 or Engine.max_fps != 30:
+		xatolar.append("FPS chegarasi sozlamasi ishlamadi")
+	_fps_chegarasi_tanlandi(2)
 	_pauzani_almashtir()
 	if not get_tree().paused or not pauza_qatlami.visible:
 		xatolar.append("Pause menyusi ochilmadi")
@@ -1959,7 +2346,11 @@ func _self_test() -> void:
 	sogliq = 100
 	zirh = 0
 	pul = 50000
-	joriy_dokon = get_tree().get_first_node_in_group("dokon")
+	joriy_dokon = null
+	for dokon in get_tree().get_nodes_in_group("dokon"):
+		if String(dokon.get("dokon_turi")) == "umumiy":
+			joriy_dokon = dokon
+			break
 	_mahsulot_sotib_ol("tayoq")
 	await get_tree().process_frame
 	if not oyinchi.inventar.has("tayoq") or pul != 38000 or oyinchi.faol_qurol != "tayoq" or not oyinchi.qurol_modellari["tayoq"].visible:
@@ -2011,8 +2402,8 @@ func _self_test() -> void:
 				xatolar.append("Egallangan trafik avtomobilidan tushib bo‘lmadi")
 			sinov_trafik.global_position = eski_joy
 		sinov_trafik.global_position.y = 4.0
-		await get_tree().physics_frame
-		await get_tree().physics_frame
+		for _kadr in range(5):
+			await get_tree().physics_frame
 		if absf(sinov_trafik.global_position.y - TRANSPORT_YER_SATHI) > 0.01 or absf(sinov_trafik.rotation.x) > 0.01 or absf(sinov_trafik.rotation.z) > 0.01:
 			xatolar.append("Trafik avtomobili yer sathiga qaytmadi")
 		sinov_trafik.zarar_ol(999)
@@ -2071,15 +2462,15 @@ func _self_test() -> void:
 		xatolar.append("Save fayli yaratilmagan")
 	else:
 		var save_sinov = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-		if not save_sinov is Dictionary or int(save_sinov.get("schema_version", 0)) != 3 or not save_sinov.has("weather") or not save_sinov.has("completed_missions"):
-			xatolar.append("Save v3 missiya, ob-havo yoki sozlamalarni saqlamadi")
+		if not save_sinov is Dictionary or int(save_sinov.get("schema_version", 0)) != 4 or not save_sinov.has("weather") or not save_sinov.has("completed_missions") or not save_sinov.has("owned_vehicles") or not save_sinov.has("general_inventory"):
+			xatolar.append("Save v4 missiya, transport, inventar, ob-havo yoki sozlamalarni saqlamadi")
 		pul = 0
 		_yuklash()
 		if pul != 25000:
 			xatolar.append("Save/load pul qiymatini tiklamadi")
 
 	if xatolar.is_empty():
-		print("SELF_TEST_OK: dunyo=210x210 chunk=9+streaming landmark=8 tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=40 fara=17 transport=270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+egallanadi parvoz=yoq piyoda=44+suhbat+zarba_uchishi svetofor=100 dokon=3 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+kesh kamera=silliq+avto_old+collision missiya=3 xarita=mini+toliq sozlama=grafika+ekran intro=JMJ save_v3=OK")
+		print("SELF_TEST_OK: dunyo=210x210 chunk=9+streaming landmark=13 interyer=3 navigatsiya=6_marshrut tun=doimiy ob_havo=5+nam_asfalt audio=shahar+qadam+motor+yomgir+UI chiroq=40 fara=17 transport=10_tur+270kmh+buzilmas+yumshoq_sekinlash+yerga_xavfsiz_chiqish trafik=16+egallanadi parvoz=yoq piyoda=44+7_rol+FSM+suhbat+zarba_uchishi svetofor=100 dokon=6 zarar=muvozanatli salon_joni=100foiz pul_drop=OK inventar=qurol_qolda urish=3_bosqich optimizatsiya=LOD+kesh kamera=silliq+avto_old+collision missiya=7+fail+retry xarita=mini+toliq sozlama=grafika+ekran+FPS intro=JMJ localization=3_til save_v4=OK")
 		audio_tizimi.tozalash()
 		await get_tree().process_frame
 		await get_tree().process_frame

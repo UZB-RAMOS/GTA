@@ -315,6 +315,18 @@ func _transport_qidir() -> void:
 	if yaqin_dokon:
 		yaqin_dokon.ochish(self)
 		return
+	var yaqin_joy: Node3D
+	eng_masofa = 4.2
+	for joy in get_tree().get_nodes_in_group("interaktiv_joy"):
+		if not joy.has_method("ishlat"):
+			continue
+		var masofa: float = float(joy.interaksiya_masofasi(self)) if joy.has_method("interaksiya_masofasi") else global_position.distance_to(joy.global_position)
+		if masofa < eng_masofa:
+			eng_masofa = masofa
+			yaqin_joy = joy
+	if yaqin_joy:
+		yaqin_joy.ishlat(self)
+		return
 	var yaqin_piyoda: Node3D
 	eng_masofa = 3.2
 	for piyoda in get_tree().get_nodes_in_group("piyoda"):
@@ -463,8 +475,14 @@ func holat_ol() -> Dictionary:
 func holat_qoy(data: Dictionary) -> void:
 	if data.has("position"):
 		var p: Array = data.position
-		global_position = Vector3(float(p[0]), float(p[1]), float(p[2]))
-	rotation.y = float(data.get("rotation_y", 0.0))
+		if p.size() >= 3:
+			var x := float(p[0])
+			var y := float(p[1])
+			var z := float(p[2])
+			if is_finite(x) and is_finite(y) and is_finite(z):
+				global_position = Vector3(clampf(x, -103.0, 103.0), clampf(y, -0.5, 12.0), clampf(z, -103.0, 103.0))
+	var saqlangan_burilish := float(data.get("rotation_y", 0.0))
+	rotation.y = saqlangan_burilish if is_finite(saqlangan_burilish) else 0.0
 	kamera_maqsad_yaw = rotation.y
 
 func _material(rang: Color, roughness := 0.82) -> StandardMaterial3D:

@@ -3,9 +3,12 @@ extends CharacterBody3D
 const YOL_SATHI := -0.10
 const VehicleExitHelper = preload("res://scripts/vehicle_exit_helper.gd")
 
+enum AIHolat { HARAKAT, SVETOFOR, TIRBANDLIK, UZOQ_LOD, OYINCHI, TIKLANISH }
+
 @export var rang := Color("c54245")
 @export var tezlik := 7.0
 @export var model_turi := 0
+@export var transport_turi := "sedan"
 @export var maksimal_tezlik := 52.0
 @export var tezlanish := 14.0
 @export var tormoz := 30.0
@@ -26,6 +29,8 @@ var sezgi_vaqti := 0.0
 var toxtash_kerak := false
 var boshqarilmoqda := false
 var haydovchi: CharacterBody3D
+var ai_holati := AIHolat.HARAKAT
+var masofaviy_kadr := 0
 
 func _ready() -> void:
 	add_to_group("trafik")
@@ -38,6 +43,7 @@ func _ready() -> void:
 	safe_margin = 0.04
 	global_position.y = YOL_SATHI
 	_yarat_model()
+	_model_profilini_qollash()
 	sezgi_vaqti = float(get_instance_id() % 12) * 0.015
 
 func _yarat_model() -> void:
@@ -97,6 +103,7 @@ func _physics_process(delta: float) -> void:
 	if yol.is_empty() and not boshqarilmoqda:
 		return
 	if vayron:
+		ai_holati = AIHolat.TIKLANISH
 		tiklanish_vaqti -= delta
 		velocity = Vector3.ZERO
 		_yerga_yopishtir()
@@ -104,8 +111,16 @@ func _physics_process(delta: float) -> void:
 			_avtomatik_tiklash()
 		return
 	if boshqarilmoqda:
+		ai_holati = AIHolat.OYINCHI
 		_oyinchi_boshqaruvi(delta)
 		return
+	var oyinchi := get_tree().get_first_node_in_group("oyinchi")
+	if is_instance_valid(oyinchi) and global_position.distance_squared_to(oyinchi.global_position) > 8100.0:
+		masofaviy_kadr = (masofaviy_kadr + 1) % 3
+		if masofaviy_kadr != 0:
+			ai_holati = AIHolat.UZOQ_LOD
+			return
+		delta *= 3.0
 	var maqsad := yol[indeks]
 	var farq := maqsad - global_position
 	farq.y = 0.0
@@ -117,7 +132,10 @@ func _physics_process(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, kerak_burilish, delta * 2.3)
 	sezgi_vaqti -= delta
 	if sezgi_vaqti <= 0.0:
-		toxtash_kerak = _qizil_chiroq_yaqin() or _oldinda_mashina()
+		var qizil := _qizil_chiroq_yaqin()
+		var oldinda := _oldinda_mashina()
+		toxtash_kerak = qizil or oldinda
+		ai_holati = AIHolat.SVETOFOR if qizil else (AIHolat.TIRBANDLIK if oldinda else AIHolat.HARAKAT)
 		sezgi_vaqti = 0.18
 	var maqsad_tezlik := 0.0 if toxtash_kerak else tezlik
 	joriy_tezlik = move_toward(joriy_tezlik, maqsad_tezlik, (10.0 if maqsad_tezlik == 0.0 else 3.0) * delta)
@@ -285,6 +303,50 @@ func _oldinda_mashina() -> bool:
 		if lokal.z < -0.2 and lokal.z > -5.8 and abs(lokal.x) < 1.30:
 			return true
 	return false
+
+func _model_profilini_qollash() -> void:
+	var profillar := {
+		"sedan": Vector3(1.0, 1.0, 1.0),
+		"hatchback": Vector3(0.98, 1.02, 0.86),
+		"sport": Vector3(1.06, 0.80, 1.05),
+		"suv": Vector3(1.08, 1.22, 1.06),
+		"taxi": Vector3(1.0, 1.0, 1.0),
+		"bus": Vector3(1.24, 1.48, 1.66),
+		"minivan": Vector3(1.10, 1.28, 1.28),
+		"delivery": Vector3(1.12, 1.34, 1.38),
+		"patrol": Vector3(1.04, 1.04, 1.02),
+		"retro": Vector3(0.94, 1.02, 0.95)
+	}
+	var masshtab: Vector3 = profillar.get(transport_turi, Vector3.ONE)
+	for child in get_children():
+		if child is MeshInstance3D:
+			child.position = Vector3(child.position.x * masshtab.x, child.position.y * masshtab.y, child.position.z * masshtab.z)
+			child.scale = masshtab
+		elif child is SpotLight3D:
+			child.position = Vector3(child.position.x * masshtab.x, child.position.y * masshtab.y, child.position.z * masshtab.z)
+		elif child is CollisionShape3D and child.shape is BoxShape3D:
+			child.shape.size = Vector3(1.74 * masshtab.x, 1.18 * masshtab.y, 3.45 * masshtab.z)
+			child.position.y = 0.72 * masshtab.y
+	match transport_turi:
+		"taxi":
+			_quti("TaksiBelgisi", Vector3(0, 1.73, 0), Vector3(0.62, 0.20, 0.34), _emissive(Color("ffd34f"), 1.8))
+		"patrol":
+			_quti("PatrulChirogiQizil", Vector3(-0.25, 1.77, 0), Vector3(0.42, 0.14, 0.24), _emissive(Color("e94452"), 2.1))
+			_quti("PatrulChirogiKok", Vector3(0.25, 1.77, 0), Vector3(0.42, 0.14, 0.24), _emissive(Color("438cff"), 2.1))
+		"delivery":
+			_quti("YukQutisi", Vector3(0, 1.42, 0.55), Vector3(1.62, 1.45, 1.95), _material(rang.lightened(0.08), 0.74, 0.35))
+		"bus":
+			tezlik *= 0.72
+			_quti("MarshrutBelgisi", Vector3(0, 2.02, -1.72), Vector3(0.70, 0.25, 0.08), _emissive(Color("f1c84f"), 1.5))
+		"retro":
+			for x in [-0.54, 0.54]:
+				_sfera("RetroFara", Vector3(x, 0.91, -1.72), Vector3(0.25, 0.25, 0.12), _emissive(Color("ffe6a1"), 2.4))
+
+func transport_turi_nomi() -> String:
+	return transport_turi
+
+func ai_holati_nomi() -> String:
+	return AIHolat.keys()[ai_holati]
 
 func _material(r: Color, roughness := 0.72, metallic := 0.0) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

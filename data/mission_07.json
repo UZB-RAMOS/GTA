@@ -1,0 +1,32 @@
+{
+  "id": "mahalliy_kvest_07",
+  "title": "Shahar kaliti",
+  "stages": [
+    {
+      "id": "maslahatchi",
+      "type": "talk_to_npc",
+      "text": "Yunusoboddagi shahar aholisi bilan gaplashing",
+      "target": [84.0, 0.2, -52.0]
+    },
+    {
+      "id": "metro_chipta",
+      "type": "collect_item",
+      "item_id": "metro_chipta",
+      "text": "Metro kirishidagi maxsus chiptani toping",
+      "target": [87.0, 0.2, -87.0]
+    },
+    {
+      "id": "hududni_och",
+      "type": "unlock_location",
+      "location_id": "mustaqillik_maydoni",
+      "text": "Mustaqillik maydonini oching",
+      "target": [18.0, 0.2, 87.0]
+    },
+    {
+      "id": "complete",
+      "type": "complete",
+      "text": "Mahalliy kvest tugadi! Mukofot: 50 000 so‘m",
+      "reward": 50000
+    }
+  ]
+}

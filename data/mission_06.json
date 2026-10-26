@@ -1,0 +1,24 @@
+{
+  "id": "sergeli_garaji_06",
+  "title": "Sergeli garajiga safar",
+  "stages": [
+    {
+      "id": "transport_ol",
+      "type": "enter_any_vehicle",
+      "text": "Istalgan avtomobilga o‘tiring",
+      "target": [-52.0, 0.2, -18.0]
+    },
+    {
+      "id": "garajga_bor",
+      "type": "reach_garage_vehicle",
+      "text": "Avtomobilni Sergeli servis garajiga olib boring",
+      "target": [-87.0, 0.2, -18.0]
+    },
+    {
+      "id": "complete",
+      "type": "complete",
+      "text": "Garaj topshirig‘i bajarildi! Mukofot: 32 000 so‘m",
+      "reward": 32000
+    }
+  ]
+}

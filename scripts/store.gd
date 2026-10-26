@@ -2,12 +2,8 @@ extends Area3D
 
 @export var dokon_nomi := "Mahalla do‘koni"
 @export var dokon_rangi := Color("267f68")
-var mahsulotlar := [
-	{"id": "dori", "nom": "Birinchi yordam qutisi", "narx": 5000, "izoh": "+40 jon"},
-	{"id": "zirh", "nom": "Himoya nimchasi", "narx": 22000, "izoh": "+60 zirh"},
-	{"id": "tayoq", "nom": "Metall tayoq", "narx": 12000, "izoh": "38 zarar"},
-	{"id": "elektroshoker", "nom": "Elektroshoker", "narx": 35000, "izoh": "55 zarar"}
-]
+@export var dokon_turi := "umumiy"
+var mahsulotlar: Array[Dictionary] = []
 
 func _ready() -> void:
 	name = "InteraktivDokon"
@@ -15,7 +11,38 @@ func _ready() -> void:
 	collision_layer = 0
 	collision_mask = 2
 	monitoring = true
+	_mahsulotlarni_sozla()
 	_yarat_bino()
+
+func _mahsulotlarni_sozla() -> void:
+	match dokon_turi:
+		"oziq_ovqat":
+			mahsulotlar = [
+				{"id": "osh", "nom": "Issiq osh", "belgi": "OVQAT", "narx": 3500, "izoh": "+25 jon", "tur": "sarflanadigan", "miqdor": 1},
+				{"id": "dori", "nom": "Birinchi yordam qutisi", "belgi": "DORI", "narx": 5000, "izoh": "+40 jon", "tur": "sarflanadigan", "miqdor": 1}
+			]
+		"kiyim":
+			mahsulotlar = [
+				{"id": "kiyim_tungi", "nom": "Tungi shahar kiyimi", "belgi": "KIYIM", "narx": 18000, "izoh": "Inventar buyumi", "tur": "kiyim", "miqdor": 1},
+				{"id": "zirh", "nom": "Himoya nimchasi", "belgi": "ZIRH", "narx": 22000, "izoh": "+60 zirh", "tur": "himoya", "miqdor": 1}
+			]
+		"avtosalon":
+			mahsulotlar = [
+				{"id": "hatchback", "nom": "JMJ ixcham hatchback", "belgi": "AVTO", "narx": 90000, "izoh": "Egalikdagi transport", "tur": "transport", "miqdor": 1},
+				{"id": "suv", "nom": "JMJ shahar SUV", "belgi": "AVTO", "narx": 145000, "izoh": "Egalikdagi transport", "tur": "transport", "miqdor": 1},
+				{"id": "sport", "nom": "JMJ tungi sportcar", "belgi": "AVTO", "narx": 220000, "izoh": "Egalikdagi transport", "tur": "transport", "miqdor": 1}
+			]
+		"servis":
+			mahsulotlar = [
+				{"id": "tamir", "nom": "To‘liq texnik xizmat", "belgi": "SERVIS", "narx": 12000, "izoh": "Yaqin transportni tiklaydi", "tur": "xizmat", "miqdor": 1},
+				{"id": "tezlik_sozlash", "nom": "Arcade boshqaruv sozlamasi", "belgi": "SERVIS", "narx": 18000, "izoh": "Egalikdagi mashina tezlanishi +8%", "tur": "xizmat", "miqdor": 1}
+			]
+		_:
+			mahsulotlar = [
+				{"id": "tayoq", "nom": "Metall tayoq", "belgi": "ANJOM", "narx": 12000, "izoh": "38 zarar", "tur": "anjom", "miqdor": 1},
+				{"id": "elektroshoker", "nom": "Elektroshoker", "belgi": "ANJOM", "narx": 35000, "izoh": "55 zarar", "tur": "anjom", "miqdor": 1},
+				{"id": "fonar", "nom": "Cho‘ntak fonari", "belgi": "AKSESSUAR", "narx": 8000, "izoh": "Inventar buyumi", "tur": "aksessuar", "miqdor": 1}
+			]
 
 func ochish(_oyinchi: Node3D) -> void:
 	get_tree().call_group("oyin_tizimi", "dokon_och", self)

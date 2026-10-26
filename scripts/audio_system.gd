@@ -7,9 +7,12 @@ var yomgir_ovozi: AudioStreamPlayer
 var motor_ovozi: AudioStreamPlayer3D
 var qadam_ovozi: AudioStreamPlayer3D
 var signal_ovozi: AudioStreamPlayer
+var eshik_ovozi: AudioStreamPlayer3D
+var missiya_ovozi: AudioStreamPlayer
 var qadam_vaqti := 0.0
 
 func sozla(yangi_oyinchi: CharacterBody3D, yangi_ob_havo: Node) -> void:
+	add_to_group("audio_tizimi")
 	oyinchi = yangi_oyinchi
 	ob_havo = yangi_ob_havo
 	shahar_ovozi = AudioStreamPlayer.new()
@@ -47,6 +50,19 @@ func sozla(yangi_oyinchi: CharacterBody3D, yangi_ob_havo: Node) -> void:
 	signal_ovozi.stream = _ton_yarat(0.13, 620.0, 0.16, false)
 	signal_ovozi.volume_db = -13.0
 	add_child(signal_ovozi)
+
+	eshik_ovozi = AudioStreamPlayer3D.new()
+	eshik_ovozi.name = "EshikOvozi"
+	eshik_ovozi.stream = _shovqin_yarat(0.24, 260.0, 0.18, false)
+	eshik_ovozi.volume_db = -11.0
+	eshik_ovozi.max_distance = 24.0
+	add_child(eshik_ovozi)
+
+	missiya_ovozi = AudioStreamPlayer.new()
+	missiya_ovozi.name = "MissiyaOvozi"
+	missiya_ovozi.stream = _ton_yarat(0.34, 740.0, 0.14, false)
+	missiya_ovozi.volume_db = -10.0
+	add_child(missiya_ovozi)
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(oyinchi):
@@ -88,8 +104,22 @@ func intro_signal() -> void:
 		signal_ovozi.play()
 	)
 
+func eshik_signal() -> void:
+	if not is_instance_valid(eshik_ovozi):
+		return
+	if is_instance_valid(oyinchi):
+		eshik_ovozi.global_position = oyinchi.global_position
+	eshik_ovozi.pitch_scale = randf_range(0.88, 1.05)
+	eshik_ovozi.play()
+
+func missiya_signal(muvaffaqiyatli := true) -> void:
+	if not is_instance_valid(missiya_ovozi):
+		return
+	missiya_ovozi.pitch_scale = 1.15 if muvaffaqiyatli else 0.62
+	missiya_ovozi.play()
+
 func tozalash() -> void:
-	for player in [shahar_ovozi, yomgir_ovozi, motor_ovozi, qadam_ovozi, signal_ovozi]:
+	for player in [shahar_ovozi, yomgir_ovozi, motor_ovozi, qadam_ovozi, signal_ovozi, eshik_ovozi, missiya_ovozi]:
 		if is_instance_valid(player):
 			player.stop()
 			player.stream = null

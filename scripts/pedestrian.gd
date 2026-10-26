@@ -3,9 +3,12 @@ extends CharacterBody3D
 signal pul_tushdi(joy, miqdor)
 signal halok_boldi(piyoda)
 
+enum AIHolat { YURISH, KUTISH, SUHBAT, QOCHISH, ZARBA, HOLAK }
+
 @export var rang := Color("d7a93b")
 @export var markaz := Vector3.ZERO
 @export var radius := 8.0
+@export var npc_turi := "oddiy"
 var maqsad := Vector3.ZERO
 var tezlik := 1.65
 var rng := RandomNumberGenerator.new()
@@ -25,6 +28,9 @@ var zarba_tezligi := Vector3.ZERO
 var zarba_vertikal_tezligi := 0.0
 var zarba_gravitatsiyasi := 18.0
 var oxirgi_suhbat_vaqti := -10000
+var ai_holati := AIHolat.YURISH
+var qochish_vaqti := 0.0
+var sezgi_vaqti := 0.0
 
 const SUHBATLAR := [
 	"Assalomu alaykum! Tungi Toshkent juda chiroyli, ehtiyot bo‘lib yuring.",
@@ -34,8 +40,18 @@ const SUHBATLAR := [
 	"Tashkent City tomondagi tungi chiroqlarni ko‘rdingizmi?"
 ]
 
+const TUR_SUHBATLARI := {
+	"sotuvchi": "Do‘kondagi narxlar virtual so‘mda. E bilan menyuni oching.",
+	"taksi_haydovchi": "Taksi topshirig‘ida yo‘lovchini vaqtida yetkazish muhim.",
+	"bekat_odami": "Avtobus bekatida tungi transportni kutyapman.",
+	"mahalla_aholisi": "Mahallamiz tinch, mashinani piyodalar yonida sekin haydang.",
+	"ishchi": "Sergeli servis hududida garajlar tun bo‘yi ishlaydi.",
+	"missiya_personaji": "Shaharda yangi ishlar bor. Sariq belgilarni kuzating."
+}
+
 func _ready() -> void:
 	add_to_group("piyoda")
+	add_to_group("npc_" + npc_turi)
 	collision_layer = 8
 	collision_mask = 1
 	rng.seed = hash(name)
@@ -43,6 +59,7 @@ func _ready() -> void:
 	jon = rng.randi_range(65, 95)
 	_yarat_model()
 	_yangi_maqsad()
+	sezgi_vaqti = float(get_instance_id() % 10) * 0.03
 
 func _yarat_model() -> void:
 	var boy := rng.randf_range(0.92, 1.08)
@@ -112,8 +129,10 @@ func _yarat_model() -> void:
 func _physics_process(delta: float) -> void:
 	zarar_immun_vaqti = maxf(0.0, zarar_immun_vaqti - delta)
 	if olgan:
+		ai_holati = AIHolat.HOLAK
 		return
 	if zarba_vaqti > 0.0:
+		ai_holati = AIHolat.ZARBA
 		zarba_vaqti = maxf(0.0, zarba_vaqti - delta)
 		zarba_tezligi = zarba_tezligi.move_toward(Vector3.ZERO, 5.2 * delta)
 		zarba_vertikal_tezligi -= zarba_gravitatsiyasi * delta
@@ -127,7 +146,19 @@ func _physics_process(delta: float) -> void:
 		if _animatsiya_kerak():
 			_animatsiya(delta, false)
 		return
+	sezgi_vaqti -= delta
+	if sezgi_vaqti <= 0.0:
+		sezgi_vaqti = 0.28
+		var xavfli_transport := _yaqin_transport_xavfi()
+		if is_instance_valid(xavfli_transport):
+			var qochish_yonalishi: Vector3 = global_position - xavfli_transport.global_position
+			qochish_yonalishi.y = 0.0
+			if qochish_yonalishi.length_squared() > 0.01:
+				maqsad = global_position + qochish_yonalishi.normalized() * 6.0
+				qochish_vaqti = 1.6
+	qochish_vaqti = maxf(0.0, qochish_vaqti - delta)
 	if kutish_vaqti > 0.0:
+		ai_holati = AIHolat.KUTISH
 		kutish_vaqti -= delta
 		velocity = Vector3.ZERO
 		if _animatsiya_kerak():
@@ -135,6 +166,7 @@ func _physics_process(delta: float) -> void:
 		if kutish_vaqti <= 0.0:
 			_yangi_maqsad()
 		return
+	ai_holati = AIHolat.QOCHISH if qochish_vaqti > 0.0 else AIHolat.YURISH
 	var farq := maqsad - global_position
 	farq.y = 0.0
 	if farq.length() < 0.75:
@@ -142,8 +174,9 @@ func _physics_process(delta: float) -> void:
 		return
 	var yonalish := farq.normalized()
 	rotation.y = lerp_angle(rotation.y, atan2(-yonalish.x, -yonalish.z), delta * 4.2)
-	velocity.x = yonalish.x * tezlik
-	velocity.z = yonalish.z * tezlik
+	var joriy_harakat_tezligi := tezlik * (2.0 if ai_holati == AIHolat.QOCHISH else 1.0)
+	velocity.x = yonalish.x * joriy_harakat_tezligi
+	velocity.z = yonalish.z * joriy_harakat_tezligi
 	velocity.y = -0.7
 	move_and_slide()
 	if _animatsiya_kerak():
@@ -175,6 +208,17 @@ func oyoqqlar_soni() -> int:
 func _yangi_maqsad() -> void:
 	maqsad = markaz + Vector3(rng.randf_range(-radius, radius), 0, rng.randf_range(-radius, radius))
 
+func _yaqin_transport_xavfi() -> Node3D:
+	for transport in get_tree().get_nodes_in_group("transport"):
+		if not is_instance_valid(transport):
+			continue
+		var transport_tezligi = transport.get("joriy_tezlik")
+		if transport_tezligi == null or absf(float(transport_tezligi)) < 3.5:
+			continue
+		if global_position.distance_squared_to(transport.global_position) < 36.0:
+			return transport
+	return null
+
 func suhbat(oyinchi: Node3D) -> void:
 	if olgan or not is_instance_valid(oyinchi):
 		return
@@ -182,18 +226,21 @@ func suhbat(oyinchi: Node3D) -> void:
 	if hozir - oxirgi_suhbat_vaqti < 1400:
 		return
 	oxirgi_suhbat_vaqti = hozir
+	ai_holati = AIHolat.SUHBAT
 	kutish_vaqti = maxf(kutish_vaqti, 2.8)
 	var yonalish := oyinchi.global_position - global_position
 	yonalish.y = 0.0
 	if yonalish.length_squared() > 0.01:
 		rotation.y = atan2(-yonalish.x, -yonalish.z)
 	var indeks := posmod(name.hash() + int(hozir / 5000), SUHBATLAR.size())
-	get_tree().call_group("oyin_tizimi", "npc_xabari", SUHBATLAR[indeks])
+	var matn := String(TUR_SUHBATLARI.get(npc_turi, SUHBATLAR[indeks]))
+	get_tree().call_group("oyin_tizimi", "npc_xabari", matn, npc_turi)
 
 func zarar_ol(miqdor: int, manba = null) -> void:
 	if olgan or miqdor <= 0 or zarar_immun_vaqti > 0.0:
 		return
 	zarar_immun_vaqti = 0.48
+	ai_holati = AIHolat.ZARBA
 	jon -= miqdor
 	model_root.rotation.z = deg_to_rad(rng.randf_range(-8.0, 8.0))
 	if manba is Node3D:
@@ -209,6 +256,7 @@ func zarar_ol(miqdor: int, manba = null) -> void:
 
 func _halok_bolish() -> void:
 	olgan = true
+	ai_holati = AIHolat.HOLAK
 	velocity = Vector3.ZERO
 	collision_layer = 0
 	collision_mask = 0
@@ -226,6 +274,9 @@ func _halok_bolish() -> void:
 	tween.parallel().tween_property(model_root, "position:y", 0.18, 0.34)
 	tween.tween_interval(1.6)
 	tween.tween_callback(queue_free)
+
+func holat_nomi() -> String:
+	return AIHolat.keys()[ai_holati]
 
 func _material(r: Color, roughness := 0.82) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

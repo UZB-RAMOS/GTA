@@ -1,0 +1,31 @@
+{
+  "id": "tungi_taksi_04",
+  "title": "Tungi taksi xizmati",
+  "stages": [
+    {
+      "id": "yolovchi_bilan_gaplash",
+      "type": "talk_to_npc",
+      "text": "Mahalla markazidagi yo‘lovchi bilan E orqali gaplashing",
+      "target": [19.0, 0.2, 20.0]
+    },
+    {
+      "id": "transport_ol",
+      "type": "enter_any_vehicle",
+      "text": "Istalgan avtomobilga o‘tiring",
+      "target": [19.0, 0.2, 20.0]
+    },
+    {
+      "id": "yolovchini_yetkaz",
+      "type": "timed_reach_any_vehicle",
+      "text": "Yo‘lovchini Yunusobod bekatiga vaqtida yetkazing",
+      "target": [84.0, 0.2, -52.0],
+      "time_limit": 75.0
+    },
+    {
+      "id": "complete",
+      "type": "complete",
+      "text": "Taksi xizmati bajarildi! Mukofot: 45 000 so‘m",
+      "reward": 45000
+    }
+  ]
+}
